@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.hc.core5.http.HttpStatus;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 
@@ -26,7 +26,7 @@ public class ApiError {
     private String debugMessage;
     private List<ApiSubError> subErrors;
 
-    private ApiError() {
+    public ApiError() {
         timestamp = LocalDateTime.now();
     }
 
@@ -64,7 +64,7 @@ public class ApiError {
         addSubError(new ApiValidationError(object, message));
     }
 
-    private void addValidationError(FieldError fieldError) {
+    public void addValidationError(FieldError fieldError) {
         this.addValidationError(
                 fieldError.getObjectName(),
                 fieldError.getField(),
@@ -76,13 +76,13 @@ public class ApiError {
         fieldErrors.forEach(this::addValidationError);
     }
 
-    private void addValidationError(ObjectError objectError) {
+    public void addValidationError(ObjectError objectError) {
         this.addValidationError(
                 objectError.getObjectName(),
                 objectError.getDefaultMessage());
     }
 
-    public void addValidationError(List<ObjectError> globalErrors) {
+    public void addValidationErrorGlobal(List<ObjectError> globalErrors) {
         globalErrors.forEach(this::addValidationError);
     }
 
@@ -91,7 +91,7 @@ public class ApiError {
      *
      * @param cv the ConstraintViolation
      */
-    private void addValidationError(ConstraintViolation<?> cv) {
+    public void addValidationError(ConstraintViolation<?> cv) {
         this.addValidationError(
                 cv.getRootBeanClass().getSimpleName(),
                 "",

@@ -3,15 +3,15 @@ package br.com.renan.vendas.online.usecase;
 import br.com.renan.vendas.online.domain.Cliente;
 import br.com.renan.vendas.online.repository.IClienteRepository;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 @Service
+@Validated
 public class CadastroCliente {
 
-	private final IClienteRepository clienteRepository;  // final pra warning
+	private final IClienteRepository clienteRepository;
 
-	@Autowired
 	public CadastroCliente(IClienteRepository clienteRepository) {
 		this.clienteRepository = clienteRepository;
 	}

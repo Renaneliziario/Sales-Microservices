@@ -6,23 +6,23 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>br.com.renan.vendas.online</groupId>
-    <artifactId>vendas-online-parent</artifactId>
+    <artifactId>MicroSales-Cloud</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>Vendas Online Parent</name>
+    <name>MicroSales-Cloud</name>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.10</version>
+        <version>3.4.3</version>
         <relativePath/>
     </parent>
 
     <properties>
-        <java.version>21</java.version>
-        <spring-cloud.version>2023.0.3</spring-cloud.version>
-        <springdoc.version>2.6.0</springdoc.version>
-        <lombok.version>1.18.34</lombok.version>
+        <java.version>17</java.version>
+        <spring-cloud.version>2024.0.0</spring-cloud.version>
+        <springdoc.version>2.8.5</springdoc.version>
+        <lombok.version>1.18.36</lombok.version>
     </properties>
 
     <dependencyManagement>

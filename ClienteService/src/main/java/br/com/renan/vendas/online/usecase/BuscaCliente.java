@@ -5,16 +5,13 @@ import br.com.renan.vendas.online.repository.IClienteRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;  // ← CORREÇÃO: Spring Data
 import org.springframework.data.domain.Pageable;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.Optional;
 
 @Service
 public class BuscaCliente {
 
-	private final IClienteRepository clienteRepository;  // final pra warning
+	private final IClienteRepository clienteRepository;
 
-	@Autowired
 	public BuscaCliente(IClienteRepository clienteRepository) {
 		this.clienteRepository = clienteRepository;
 	}
@@ -29,4 +26,7 @@ public class BuscaCliente {
 	}
 
 	public Boolean isCadastrado(String id) {
-		Optional<Cliente> cli
+		return clienteRepository.existsById(id);
+	}
+
+}
