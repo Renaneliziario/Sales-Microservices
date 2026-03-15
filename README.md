@@ -78,7 +78,32 @@
 ```bash
 # 1. Suba a infraestrutura (MongoDB + pgAdmin) via Docker Compose
 docker-compose up -d
+```
 
+```yaml
+# docker-compose.yml
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongo_data:/data/db
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin_ui
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    volumes:
+      - ./pgadmin_data:/var/lib/pgadmin
+```
+
+```bash
 # 2. Inicie o Config Server primeiro (os demais dependem dele)
 cd ConfigServer
 mvn spring-boot:run

@@ -129,9 +129,28 @@ O Docker foi utilizado exclusivamente para orquestrar a **infraestrutura local**
 docker-compose up -d
 ```
 
-O `docker-compose.yml` define:
-- **MongoDB** na porta 27017
-- **pgAdmin** para administração visual do banco
+```yaml
+# docker-compose.yml
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongo_data:/data/db
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin_ui
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    volumes:
+      - ./pgadmin_data:/var/lib/pgadmin
+```
 
 A aplicação Spring Boot continua rodando diretamente na JVM local, conectando-se aos containers de infraestrutura.
 
