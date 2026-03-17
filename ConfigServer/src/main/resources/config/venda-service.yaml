@@ -5,8 +5,17 @@ server:
 spring:
   data:
     mongodb:
-      uri: mongodb://127.0.0.1:27017/venda
+      uri: mongodb://${MONGO_USER:admin}:${MONGO_PASSWORD:admin}@127.0.0.1:27017/venda
       auto-index-creation: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
 
 application:
   produtoService:

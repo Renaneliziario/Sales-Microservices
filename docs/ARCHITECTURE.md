@@ -4,7 +4,7 @@
 
 Ecossistema de microserviços para gestão comercial (Clientes, Produtos, Vendas), construído com Spring Boot 3.4 e Spring Cloud. Cada serviço é independente, com sua própria base de dados e ciclo de deploy — comunicando-se via APIs REST e compartilhando configurações através de um Config Server centralizado.
 
-> **Status:** Projeto em desenvolvimento ativo. ConfigServer e ClienteService implementados. ProdutoService e VendasService em progresso.
+> **Status:** Projeto finalizado. Todos os serviços implementados com CRUD completo, testes unitários e comunicação resiliente entre serviços.
 
 ---
 
@@ -14,9 +14,9 @@ Ecossistema de microserviços para gestão comercial (Clientes, Produtos, Vendas
 Sales-Microservices/
 │
 ├── ConfigServer/       → Gerenciamento centralizado de configurações (Spring Cloud Config)
-├── ClienteService/     → CRUD de clientes com persistência MongoDB
-├── ProdutoService/     → CRUD de produtos (em desenvolvimento)
-└── VendasService/      → Orquestração de vendas (em desenvolvimento)
+├── ClienteService/     → CRUD de clientes com persistência MongoDB  ✅
+├── ProdutoService/     → CRUD de produtos com persistência MongoDB  ✅
+└── VendasService/      → Orquestração de vendas, comunica com ProdutoService via Feign  ✅
 ```
 
 ---
@@ -26,9 +26,9 @@ Sales-Microservices/
 ```
                     ┌─────────────────┐
                     │   Config Server  │  ← Porta 8888
-                    │  (Spring Cloud)  │  ← Lê configs do Git/classpath
+                    │  (Spring Cloud)  │  ← Lê configs do classpath
                     └────────┬────────┘
-                             │ fornece configurações
+                             │ fornece configurações na inicialização
               ┌──────────────┼──────────────┐
               ▼              ▼              ▼
     ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
@@ -36,8 +36,11 @@ Sales-Microservices/
     │  Porta 8081  │  │  Porta 8082  │  │  Porta 8083  │
     └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
            │                 │                 │
-           ▼                 ▼                 ▼
-       MongoDB            MongoDB            MongoDB
+           ▼                 ▼      ┌──────────┘
+       MongoDB            MongoDB   │ Feign Client (HTTP)
+                                    ▼
+                             ProdutoService
+                          (valida produto ao registrar venda)
 ```
 
 ---
@@ -50,8 +53,8 @@ O objetivo principal deste projeto é **aprendizado de arquitetura distribuída*
 
 - Como serviços se comunicam via HTTP/REST
 - Como configurações são gerenciadas de forma centralizada
-- Como bancos de dados diferentes (SQL vs NoSQL) coexistem no mesmo ecossistema
-- Como o Docker permite subir a infraestrutura local (MongoDB) via docker-compose
+- Como o Docker permite subir a infraestrutura local (MongoDB) com um único comando
+- Como tratar falhas de comunicação entre serviços sem derrubar o sistema inteiro
 
 ---
 
@@ -63,38 +66,37 @@ O Config Server resolve isso centralizando todas as propriedades:
 
 ```
 ConfigServer (porta 8888)
-    └── serve: clienteservice.properties
-    └── serve: produtoservice.properties
-    └── serve: vendasservice.properties
+    ├── serve: cliente-service.yaml  → configurações do ClienteService
+    ├── serve: produto-service.yaml  → configurações do ProdutoService
+    └── serve: venda-service.yaml    → configurações do VendasService
 ```
 
 Cada serviço ao iniciar busca suas configurações no Config Server via:
 ```yaml
-# bootstrap.yml de cada serviço
+# application.properties de cada serviço
 spring:
   config:
     import: "configserver:http://localhost:8888"
 ```
 
-**Benefício:** Alterar a string de conexão do MongoDB exige mudança em um único lugar — sem redeploy do ClienteService.
+**Benefício:** Alterar a string de conexão do MongoDB exige mudança em um único lugar — sem redeploy de nenhum serviço.
 
 ---
 
-### 3. Por que MongoDB no ClienteService?
+### 3. Por que MongoDB?
 
-Cadastros de clientes têm natureza flexível: endereços variados, campos opcionais, estrutura que evolui com o tempo. Um schema relacional exigiria `ALTER TABLE` a cada nova necessidade.
+Cadastros de clientes, produtos e vendas têm natureza flexível: campos opcionais, estrutura que evolui com o tempo. O MongoDB permite:
 
-O MongoDB permite:
-- Documentos sem schema fixo
-- Evolução de estrutura sem migração
+- Documentos sem schema fixo — novos campos sem `ALTER TABLE`
 - Alta performance em leitura de documentos completos
+- `@Indexed(unique = true)` para garantir unicidade de campos como CPF e email
 
 ```java
 @Document(collection = "clientes")
 public class Cliente {
     @Id
-    private String id;  // ObjectId do MongoDB
-    private String nome;
+    private String id;  // ObjectId gerado automaticamente pelo MongoDB
+    @Indexed(unique = true)
     private String cpf;
     // novos campos podem ser adicionados sem migration
 }
@@ -104,68 +106,112 @@ public class Cliente {
 
 ### 4. Estrutura interna de cada serviço
 
-Cada microserviço segue a mesma arquitetura interna em camadas:
+Todos os serviços seguem a mesma organização de pacotes, inspirada em **Clean Architecture**:
 
 ```
-src/main/java/
-└── br/com/renan/{servico}/
-    ├── controller/   → Endpoints REST (@RestController)
-    ├── service/      → Regras de negócio
-    ├── repository/   → Acesso a dados (Spring Data)
-    ├── domain/       → Entidades/Documentos
-    └── dto/          → Objetos de transferência de dados
+src/main/java/br/com/renan/vendas/online/
+├── domain/           → Entidades/documentos MongoDB (@Document)
+├── repository/       → Interface de acesso ao banco (Spring Data)
+├── usecase/          → Regras de negócio (BuscaCliente, CadastroCliente, etc.)
+├── resources/        → Endpoints REST (@RestController)
+├── errorhandling/    → Tratamento global de erros (@ControllerAdvice)
+├── onlineconfig/     → Configurações (Swagger/OpenAPI)
+└── dto/              → Objetos de transferência de dados (apenas no VendasService)
 ```
 
-**Motivo:** Manter a mesma estrutura em todos os serviços reduz o custo cognitivo — um desenvolvedor que conhece um serviço consegue navegar nos outros sem dificuldade.
+**Por que `usecase/` ao invés de `service/`?**
+
+O nome `service/` é genérico demais. Usar `usecase/` torna a intenção explícita: cada classe representa uma **ação de negócio** com nome descritivo — `BuscaCliente` busca clientes, `CadastroVenda` registra vendas. É possível ler o pacote e entender o que o sistema faz sem abrir nenhum arquivo.
 
 ---
 
-### 5. Por que Docker?
+### 5. Comunicação entre serviços: Feign + Circuit Breaker
 
-O Docker foi utilizado exclusivamente para orquestrar a **infraestrutura local** via `docker-compose` — MongoDB e pgAdmin — sem containerizar a aplicação Java em si. Isso resolve o problema de instalar e configurar manualmente cada dependência, garantindo um ambiente reproduzível com um único comando.
+Quando o VendasService recebe uma requisição de nova venda, ele precisa consultar o ProdutoService para validar se os produtos existem e obter seus preços. Isso é feito com **OpenFeign** — uma biblioteca que transforma uma interface Java em uma chamada HTTP:
+
+```java
+@FeignClient(
+    name = "produto-service",
+    url = "${services.produto.url:http://localhost:8082}",
+    fallback = ProdutoClientFallback.class
+)
+public interface IProdutoClient {
+    @GetMapping("/produto/{id}")
+    ProdutoDTO buscarPorId(@PathVariable String id);
+}
+```
+
+**O que é Circuit Breaker?**
+
+Imagine um disjuntor elétrico: quando a fiação sobrecarrega, ele desliga antes de causar um incêndio. O Circuit Breaker de software faz o mesmo com chamadas HTTP — se o ProdutoService estiver fora do ar, ao invés de o VendasService ficar esperando indefinidamente (e potencialmente derrubar junto), o circuit breaker detecta a falha e aciona o **fallback** — um comportamento alternativo previamente definido:
+
+```java
+public class ProdutoClientFallback implements IProdutoClient {
+    @Override
+    public ProdutoDTO buscarPorId(String id) {
+        throw new IllegalStateException(
+            "ProdutoService indisponível. Tente novamente mais tarde."
+        );
+    }
+}
+```
+
+Resultado: o VendasService responde com erro `503 Service Unavailable` de forma controlada, sem travar.
+
+---
+
+### 6. Tratamento de erros padronizado
+
+Todos os serviços compartilham a mesma estrutura de resposta de erro via `@ControllerAdvice`:
+
+```json
+// Exemplo de erro 400 Bad Request (validação)
+{
+  "status": 400,
+  "message": "Erro de validação",
+  "errors": [
+    { "field": "nome", "message": "não deve estar em branco" },
+    { "field": "cpf", "message": "CPF inválido" }
+  ]
+}
+```
+
+```json
+// Exemplo de erro 404 Not Found
+{
+  "status": 404,
+  "message": "Cliente não encontrado com id: abc123"
+}
+```
+
+**Benefício:** O frontend (ou outro serviço) recebe sempre o mesmo formato de erro, independente de qual serviço respondeu — facilitando o tratamento no lado do consumidor.
+
+---
+
+### 7. Por que Docker?
+
+O Docker foi utilizado para orquestrar a **infraestrutura local** via `docker-compose` — apenas o MongoDB — sem containerizar a aplicação Java em si. Isso resolve o problema de instalar e configurar manualmente dependências, garantindo um ambiente reproduzível com um único comando.
 
 ```bash
 # Sobe toda a infraestrutura necessária
 docker-compose up -d
 ```
 
-```yaml
-# docker-compose.yml
-services:
-  mongodb:
-    image: mongo:latest
-    container_name: mongodb_db
-    ports:
-      - "27017:27017"
-    volumes:
-      - ./mongo_data:/data/db
+A aplicação Spring Boot continua rodando diretamente na JVM local, conectando-se ao container do MongoDB.
 
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin_ui
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "5050:80"
-    volumes:
-      - ./pgadmin_data:/var/lib/pgadmin
-```
-
-A aplicação Spring Boot continua rodando diretamente na JVM local, conectando-se aos containers de infraestrutura.
-
-**Próximo passo:** Containerizar os próprios microserviços com `Dockerfile` em cada serviço, permitindo subir tudo com um único `docker-compose up`.
+**Próximo passo natural:** Containerizar os próprios microserviços com `Dockerfile` em cada serviço, permitindo subir tudo — app + infra — com um único `docker-compose up`.
 
 ---
 
-### 6. Documentação com Swagger/OpenAPI
+### 8. Documentação com Swagger/OpenAPI
 
 Cada serviço expõe sua documentação de API automaticamente via SpringDoc:
 
-```
-http://localhost:8081/swagger-ui.html  → ClienteService
-http://localhost:8082/swagger-ui.html  → ProdutoService
-```
+| Serviço | URL |
+|:---|:---|
+| ClienteService | `http://localhost:8081/swagger-ui.html` |
+| ProdutoService | `http://localhost:8082/swagger-ui.html` |
+| VendasService  | `http://localhost:8083/swagger-ui.html` |
 
 **Motivo:** Em um ecossistema com múltiplos serviços, o contrato de API precisa ser claro e testável sem depender de ferramentas externas como Postman.
 
@@ -176,19 +222,24 @@ http://localhost:8082/swagger-ui.html  → ProdutoService
 | Funcionalidade | Status |
 |---|---|
 | Config Server | ✅ Implementado |
-| ClienteService — CRUD completo | ✅ Implementado |
-| ClienteService — MongoDB | ✅ Implementado |
-| ClienteService — Swagger | ✅ Implementado |
-| ProdutoService — CRUD | 🔄 Em desenvolvimento |
-| VendasService — Orquestração | 🔄 Em desenvolvimento |
-| Comunicação entre serviços (RestTemplate/Feign) | 📋 Planejado |
-| Service Discovery (Eureka) | 📋 Planejado |
-| docker-compose.yml completo (containerizar os serviços) | 📋 Planejado |
+| ClienteService — CRUD completo + MongoDB | ✅ Implementado |
+| ClienteService — Swagger, testes, tratamento de erros | ✅ Implementado |
+| ProdutoService — CRUD completo + MongoDB | ✅ Implementado |
+| ProdutoService — Swagger, testes, tratamento de erros | ✅ Implementado |
+| VendasService — Orquestração de vendas | ✅ Implementado |
+| Comunicação entre serviços via Feign | ✅ Implementado |
+| Circuit Breaker com Resilience4j | ✅ Implementado |
+| Spring Actuator (health check) em todos os serviços | ✅ Implementado |
+| Credenciais via variáveis de ambiente | ✅ Implementado |
+| Service Discovery (Eureka) | 📋 Fora do escopo atual |
+| Containerizar os microserviços (Dockerfile) | 📋 Próximo passo |
+| API Gateway (Spring Cloud Gateway) | 📋 Próximo passo |
 
 ---
 
-## O que eu faria diferente hoje
+## O que eu faria diferente em produção
 
-- **API Gateway:** Em produção, os clientes não deveriam chamar cada serviço diretamente. Um API Gateway (Spring Cloud Gateway) centralizaria as chamadas, autenticação e rate limiting.
-- **Circuit Breaker:** Sem resiliência implementada — se o ProdutoService cair, o VendasService falha em cascata. Resilience4j resolveria isso.
-- **Mensageria:** A comunicação síncrona via REST é simples, mas para operações críticas como registro de venda, uma fila assíncrona (RabbitMQ/Kafka) seria mais resiliente.
+- **API Gateway:** Os clientes não deveriam chamar cada serviço diretamente. Um API Gateway (Spring Cloud Gateway) centralizaria as chamadas, autenticação e rate limiting em um único ponto de entrada.
+- **Mensageria assíncrona:** A comunicação entre VendasService e ProdutoService é síncrona (Feign). Para operações críticas como registro de venda, uma fila assíncrona (RabbitMQ/Kafka) seria mais resiliente — a venda seria registrada mesmo que o ProdutoService estivesse temporariamente fora.
+- **Service Discovery (Eureka):** Atualmente a URL do ProdutoService é configurada manualmente. Com Eureka, os serviços se registrariam automaticamente e o Feign descobriria o endereço sem configuração manual.
+- **Containerização completa:** Adicionar `Dockerfile` em cada serviço para que toda a aplicação possa ser levantada com `docker-compose up` — sem precisar instalar JDK localmente.

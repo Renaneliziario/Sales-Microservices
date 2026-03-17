@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 public class OpenAPIConfig {
 
 	@Bean
-	public OpenAPI customOpenAPI(@Value("${application-version}") String appVersion) {
+	public OpenAPI customOpenAPI(@Value("${application-version:1.0.0}") String appVersion) {
 		return new OpenAPI()
 				          .info(new Info()
 				          .title("Serviço de clientes")
@@ -21,6 +21,6 @@ public class OpenAPIConfig {
 				          .description("Serviço para gerenciamento de clientes")
 				          .termsOfService("http://swagger.io/terms/")
 				          .license(new License().name("Apache 2.0").url("http://springdoc.org"))
-				          .contact(new Contact().name("Renan Queiroz").email("renan@email.com")));
+				          .contact(new Contact().name("Equipe de Suporte").url("https://github.com/renan")));
 	}
 }

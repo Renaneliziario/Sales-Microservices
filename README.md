@@ -6,9 +6,9 @@
 ![MongoDB](https://img.shields.io/badge/NoSQL-MongoDB-47A248?style=flat&logo=mongodb&logoColor=white)
 ![Docker](https://img.shields.io/badge/Infra-Docker-2496ED?style=flat&logo=docker&logoColor=white)
 ![Swagger](https://img.shields.io/badge/Docs-Swagger%20%7C%20OpenAPI-85EA2D?style=flat&logo=swagger&logoColor=black)
-![Status](https://img.shields.io/badge/Status-Em%20Desenvolvimento-yellow?style=flat)
+![Status](https://img.shields.io/badge/Status-Funcional-brightgreen?style=flat)
 
-> Ecossistema de microserviços para gestão comercial construído com **Spring Boot 3.4**, **Spring Cloud Config**, **MongoDB** e **Docker**. O `ClienteService` está em produção com CRUD completo, paginação, validações e tratamento de erros estruturado. Os demais serviços estão em desenvolvimento ativo.
+> Ecossistema de microserviços para gestão comercial construído com **Spring Boot 3.4**, **Spring Cloud Config**, **MongoDB** e **Docker**. Todos os serviços estão implementados com CRUD completo, testes unitários, tratamento de erros estruturado e comunicação entre serviços via Feign com Circuit Breaker.
 
 > 📐 Quer entender as decisões técnicas e de arquitetura? Veja [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
@@ -16,14 +16,16 @@
 
 ## ✨ Destaques Técnicos
 
-- **Arquitetura Use Case** (`BuscaCliente`, `CadastroCliente`) — separação de intenção de negócio, inspirada em Clean Architecture
-- **`@ControllerAdvice` estruturado** (`ApiError`, `ApiValidationError`) — respostas de erro padronizadas e descritivas para todos os endpoints
+- **Arquitetura Use Case** (`BuscaCliente`, `CadastroCliente`, `BuscaProduto`...) — cada intenção de negócio tem sua própria classe, inspirado em Clean Architecture
+- **`@ControllerAdvice` estruturado** (`ApiError`, `ApiValidationError`) — respostas de erro padronizadas em todos os endpoints de todos os serviços
 - **Bean Validation completo** — `@NotNull`, `@Size`, `@Pattern` com mensagens customizadas diretamente no domínio
 - **Constructor Injection** em todos os componentes — sem `@Autowired` em campos, código testável e sem acoplamento implícito
 - **Paginação nativa** com `Pageable` do Spring Data
-- **OpenAPI/Swagger** configurado com metadados e versionamento via `@Value`
-- **`@Indexed(unique = true)`** no MongoDB para CPF e email — consistência garantida no banco
+- **OpenAPI/Swagger** configurado com metadados e versionamento via `@Value` em cada serviço
+- **`@Indexed(unique = true)`** no MongoDB para campos únicos — consistência garantida no banco
 - **Spring Cloud Config Server** centralizando configurações de todos os serviços
+- **Feign Client** com **Circuit Breaker (Resilience4j)** — VendasService consulta ProdutoService de forma resiliente; se o serviço cair, o fallback assume sem derrubar o sistema
+- **26 testes unitários** distribuídos entre ClienteService, ProdutoService e VendasService
 
 ---
 
@@ -37,21 +39,45 @@
            ↑ busca config na inicialização
 ┌──────────┴──────────┬────────────────┬───────────────┐
 │  ClienteService     │  ProdutoService│ VendasService │
-│  :8081  ✅ Ativo    │  :8082 🚧 WIP  │ :8083 🚧 WIP  │
-│  MongoDB            │                │               │
-└─────────────────────┴────────────────┴───────────────┘
+│  :8081  ✅ Ativo    │  :8082 ✅ Ativo │ :8083 ✅ Ativo │
+│  MongoDB            │  MongoDB       │  MongoDB      │
+└─────────────────────┴────────────────┴───────┬───────┘
+                                               │
+                              consulta produto via Feign
+                                               ↓
+                                       ProdutoService
 ```
 
-### ClienteService — Endpoints disponíveis
+### ClienteService — Endpoints
 
 | Método | Endpoint | Descrição |
 |:---|:---|:---|
 | `GET` | `/cliente?page=0&size=10` | Lista paginada de clientes |
-| `POST` | `/cliente` | Cadastra novo cliente (validação completa) |
+| `POST` | `/cliente` | Cadastra novo cliente — retorna `201 Created` |
 | `GET` | `/cliente/{id}` | Busca por ID (404 estruturado se não encontrado) |
-| `GET` | `/cliente/isCadastrado/{id}` | Verifica existência por ID |
+| `GET` | `/cliente/isCadastrado/{id}` | Verifica existência por ID — retorna `true/false` |
 | `PUT` | `/cliente` | Atualiza cliente existente |
-| `DELETE` | `/cliente/{id}` | Remove cliente (retorna `204 No Content`) |
+| `DELETE` | `/cliente/{id}` | Remove cliente — retorna `204 No Content` |
+
+### ProdutoService — Endpoints
+
+| Método | Endpoint | Descrição |
+|:---|:---|:---|
+| `GET` | `/produto?page=0&size=10` | Lista paginada de produtos |
+| `POST` | `/produto` | Cadastra novo produto — retorna `201 Created` |
+| `GET` | `/produto/{id}` | Busca por ID |
+| `PUT` | `/produto` | Atualiza produto existente |
+| `DELETE` | `/produto/{id}` | Remove produto — retorna `204 No Content` |
+
+### VendasService — Endpoints
+
+| Método | Endpoint | Descrição |
+|:---|:---|:---|
+| `POST` | `/venda` | Registra nova venda (valida cliente e produtos via Feign) |
+| `GET` | `/venda/{id}` | Busca venda por ID |
+| `GET` | `/venda/cliente/{clienteId}` | Lista vendas de um cliente |
+| `PUT` | `/venda/{id}/finalizar` | Finaliza uma venda em aberto |
+| `PUT` | `/venda/{id}/cancelar` | Cancela uma venda em aberto |
 
 ---
 
@@ -63,11 +89,15 @@
 | Spring Boot | 3.4.3 | Framework base dos microserviços |
 | Spring Cloud | 2024.0.0 | Config Server centralizado |
 | Spring Data MongoDB | latest | Repositórios NoSQL |
+| OpenFeign | latest | Comunicação HTTP entre serviços (VendasService → ProdutoService) |
+| Resilience4j | latest | Circuit Breaker — proteção contra falhas em cascata |
+| Spring Actuator | latest | Endpoint `/actuator/health` em todos os serviços |
 | MongoDB | latest | Banco de dados orientado a documentos |
 | Docker | latest | Infraestrutura local |
 | Lombok | latest | Redução de boilerplate |
-| Springdoc OpenAPI | latest | Swagger UI e documentação |
+| Springdoc OpenAPI | latest | Swagger UI e documentação de API |
 | Bean Validation | Jakarta EE | Validação de entrada |
+| JUnit 5 + Mockito | latest | Testes unitários |
 
 ---
 
@@ -76,7 +106,7 @@
 **Pré-requisitos:** JDK 17+, Maven 3+, Docker
 
 ```bash
-# 1. Suba a infraestrutura (MongoDB + pgAdmin) via Docker Compose
+# 1. Suba o MongoDB via Docker Compose
 docker-compose up -d
 ```
 
@@ -90,21 +120,10 @@ services:
       - "27017:27017"
     volumes:
       - ./mongo_data:/data/db
-
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin_ui
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "5050:80"
-    volumes:
-      - ./pgadmin_data:/var/lib/pgadmin
 ```
 
 ```bash
-# 2. Inicie o Config Server primeiro (os demais dependem dele)
+# 2. Inicie o Config Server (OBRIGATÓRIO primeiro — os demais dependem dele)
 cd ConfigServer
 mvn spring-boot:run
 
@@ -112,18 +131,38 @@ mvn spring-boot:run
 cd ClienteService
 mvn spring-boot:run
 
-# 4. Acesse a documentação interativa (Swagger UI):
-http://localhost:8081/swagger-ui.html
+# 4. Inicie o ProdutoService
+cd ProdutoService
+mvn spring-boot:run
+
+# 5. Inicie o VendasService (depende do ProdutoService para validar itens)
+cd VendasService
+mvn spring-boot:run
 ```
+
+> ⚠️ **Ordem importa!** O Config Server deve estar rodando antes de qualquer outro serviço. O VendasService depende do ProdutoService para validar os itens de uma venda.
 
 ---
 
-## 📄 Documentação da API
+## 📄 Documentação da API (Swagger UI)
 
-Com o `ClienteService` rodando, acesse:
+Com os serviços rodando, acesse a documentação interativa:
 
-- **Swagger UI:** `http://localhost:8081/swagger-ui.html`
-- **OpenAPI JSON:** `http://localhost:8081/v3/api-docs`
+| Serviço | Swagger UI | OpenAPI JSON |
+|:---|:---|:---|
+| ClienteService | `http://localhost:8081/swagger-ui.html` | `http://localhost:8081/v3/api-docs` |
+| ProdutoService | `http://localhost:8082/swagger-ui.html` | `http://localhost:8082/v3/api-docs` |
+| VendasService | `http://localhost:8083/swagger-ui.html` | `http://localhost:8083/v3/api-docs` |
+
+### Health Check (Actuator)
+
+Todos os serviços expõem um endpoint de saúde:
+
+```
+GET http://localhost:8081/actuator/health  → ClienteService
+GET http://localhost:8082/actuator/health  → ProdutoService
+GET http://localhost:8083/actuator/health  → VendasService
+```
 
 ---
 

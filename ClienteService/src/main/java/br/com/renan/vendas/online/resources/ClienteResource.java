@@ -30,7 +30,7 @@ public class ClienteResource {
 
     @PostMapping
     public ResponseEntity<Cliente> cadastrar(@RequestBody @Valid Cliente cliente) {
-        return ResponseEntity.ok(cadastroCliente.cadastrar(cliente));
+        return ResponseEntity.status(HttpStatus.CREATED).body(cadastroCliente.cadastrar(cliente));
     }
 
     @GetMapping(value = "/{id}")
