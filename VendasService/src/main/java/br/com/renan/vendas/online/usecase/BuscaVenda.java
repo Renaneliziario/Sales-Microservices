@@ -3,7 +3,7 @@ package br.com.renan.vendas.online.usecase;
 import br.com.renan.vendas.online.domain.Venda;
 import br.com.renan.vendas.online.repository.IVendaRepository;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.data.domain.Page;  // ← CORREÇÃO: Spring Data
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 

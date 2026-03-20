@@ -5,7 +5,7 @@ server:
 spring:
   data:
     mongodb:
-      uri: mongodb://${MONGO_USER:admin}:${MONGO_PASSWORD:admin}@127.0.0.1:27017/venda
+      uri: mongodb://127.0.0.1:27017/venda
       auto-index-creation: true
 
 management:
@@ -17,11 +17,17 @@ management:
     health:
       show-details: always
 
+services:
+  produto:
+    url: http://localhost:8082
+  cliente:
+    url: http://localhost:8081
+
 application:
   produtoService:
-    url: http://localhost:8082
-    endpointConsultarProduto: ${application.produtoService.url}/produto
+    url: ${services.produto.url}
+    endpointConsultarProduto: ${services.produto.url}/produto
   clienteService:
-    url: http://localhost:8081
-    endpointConsultarCliente: ${application.clienteService.url}/cliente/isCadastrado/{id}
+    url: ${services.cliente.url}
+    endpointConsultarCliente: ${services.cliente.url}/cliente/isCadastrado/{id}
 application-version: 2.0

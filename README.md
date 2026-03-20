@@ -65,19 +65,23 @@
 |:---|:---|:---|
 | `GET` | `/produto?page=0&size=10` | Lista paginada de produtos |
 | `POST` | `/produto` | Cadastra novo produto — retorna `201 Created` |
-| `GET` | `/produto/{id}` | Busca por ID |
+| `GET` | `/produto/id/{id}` | Busca por ID |
+| `GET` | `/produto/{codigo}` | Busca por código |
+| `GET` | `/produto/isCadastrado/{id}` | Verifica existência — retorna `true/false` |
 | `PUT` | `/produto` | Atualiza produto existente |
 | `DELETE` | `/produto/{id}` | Remove produto — retorna `204 No Content` |
+| `POST` | `/produto/{codigo}/estoque/baixa` | Baixa estoque do produto |
+| `POST` | `/produto/{codigo}/estoque/reposicao` | Repõe estoque do produto |
 
 ### VendasService — Endpoints
 
 | Método | Endpoint | Descrição |
 |:---|:---|:---|
-| `POST` | `/venda` | Registra nova venda (valida cliente e produtos via Feign) |
-| `GET` | `/venda/{id}` | Busca venda por ID |
-| `GET` | `/venda/cliente/{clienteId}` | Lista vendas de um cliente |
+| `GET` | `/venda?page=0&size=10` | Lista paginada de vendas |
+| `POST` | `/venda` | Registra nova venda (valida cliente e produtos via Feign, reserva estoque) |
+| `PUT` | `/venda/{id}/{codigoProduto}/{quantidade}/addProduto` | Adiciona produto a uma venda em aberto |
 | `PUT` | `/venda/{id}/finalizar` | Finaliza uma venda em aberto |
-| `PUT` | `/venda/{id}/cancelar` | Cancela uma venda em aberto |
+| `PUT` | `/venda/{id}/cancelar` | Cancela uma venda e estorna o estoque |
 
 ---
 

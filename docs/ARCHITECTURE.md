@@ -36,11 +36,11 @@ Sales-Microservices/
     │  Porta 8081  │  │  Porta 8082  │  │  Porta 8083  │
     └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
            │                 │                 │
-           ▼                 ▼      ┌──────────┘
-       MongoDB            MongoDB   │ Feign Client (HTTP)
-                                    ▼
-                             ProdutoService
-                          (valida produto ao registrar venda)
+           ▼                 ▼        Feign Client (HTTP)
+       MongoDB            MongoDB     ├── valida cliente → ClienteService
+                                      ├── busca produto → ProdutoService
+                                      ├── baixa estoque → ProdutoService
+                                      └── repõe estoque (rollback) → ProdutoService
 ```
 
 ---
@@ -160,7 +160,34 @@ Resultado: o VendasService responde com erro `503 Service Unavailable` de forma 
 
 ---
 
-### 6. Tratamento de erros padronizado
+### 6. Fluxo de criação de venda com consistência de dados
+
+Em microsserviços não existe transação distribuída automática. O `VendasService` resolve isso com um **rollback manual** (Compensating Transaction):
+
+```
+POST /venda
+│
+├── 1. Valida cliente → GET ClienteService /cliente/isCadastrado/{id}
+│        Se não existir → lança EntityNotFoundException (404)
+│
+├── 2. Para cada produto no carrinho:
+│       a. Busca produto → GET ProdutoService /produto/{codigo}
+│       b. Baixa estoque → POST ProdutoService /produto/{codigo}/estoque/baixa
+│       c. Adiciona item à lista de processados
+│
+├── 3. Se QUALQUER erro ocorrer:
+│       → Itera pelos itens JÁ processados
+│       → Repõe estoque → POST ProdutoService /produto/{codigo}/estoque/reposicao
+│       → Lança exceção (venda não é salva)
+│
+└── 4. Salva venda no MongoDB com status INICIADA
+```
+
+O mesmo padrão de estorno é aplicado no cancelamento de venda (`PUT /venda/{id}/cancelar`).
+
+---
+
+### 7. Tratamento de erros padronizado
 
 Todos os serviços compartilham a mesma estrutura de resposta de erro via `@ControllerAdvice`:
 
@@ -188,7 +215,7 @@ Todos os serviços compartilham a mesma estrutura de resposta de erro via `@Cont
 
 ---
 
-### 7. Por que Docker?
+### 8. Por que Docker?
 
 O Docker foi utilizado para orquestrar a **infraestrutura local** via `docker-compose` — apenas o MongoDB — sem containerizar a aplicação Java em si. Isso resolve o problema de instalar e configurar manualmente dependências, garantindo um ambiente reproduzível com um único comando.
 
@@ -203,7 +230,7 @@ A aplicação Spring Boot continua rodando diretamente na JVM local, conectando-
 
 ---
 
-### 8. Documentação com Swagger/OpenAPI
+### 9. Documentação com Swagger/OpenAPI
 
 Cada serviço expõe sua documentação de API automaticamente via SpringDoc:
 
@@ -227,7 +254,8 @@ Cada serviço expõe sua documentação de API automaticamente via SpringDoc:
 | ProdutoService — CRUD completo + MongoDB | ✅ Implementado |
 | ProdutoService — Swagger, testes, tratamento de erros | ✅ Implementado |
 | VendasService — Orquestração de vendas | ✅ Implementado |
-| Comunicação entre serviços via Feign | ✅ Implementado |
+| Comunicação entre serviços via Feign (ProdutoService + ClienteService) | ✅ Implementado |
+| Controle de estoque com rollback manual (Compensating Transaction) | ✅ Implementado |
 | Circuit Breaker com Resilience4j | ✅ Implementado |
 | Spring Actuator (health check) em todos os serviços | ✅ Implementado |
 | Credenciais via variáveis de ambiente | ✅ Implementado |

@@ -1,5 +1,6 @@
 package br.com.renan.vendas.online.usecase;
 
+import br.com.renan.vendas.online.client.IClienteClient;
 import br.com.renan.vendas.online.client.IProdutoClient;
 import br.com.renan.vendas.online.domain.ItemVenda;
 import br.com.renan.vendas.online.domain.StatusVenda;
@@ -14,6 +15,7 @@ import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -24,10 +26,14 @@ public class CadastroVenda {
 
 	private final IVendaRepository vendaRepository;
 	private final IProdutoClient produtoClient;
+	private final IClienteClient clienteClient;
 
-	public CadastroVenda(IVendaRepository vendaRepository, IProdutoClient produtoClient) {
+	public CadastroVenda(IVendaRepository vendaRepository, 
+			IProdutoClient produtoClient,
+			IClienteClient clienteClient) {
 		this.vendaRepository = vendaRepository;
 		this.produtoClient = produtoClient;
+		this.clienteClient = clienteClient;
 	}
 
 	public Venda cadastrar(@Valid VendaDTO vendaDTO) {
@@ -38,14 +44,44 @@ public class CadastroVenda {
 				.dataVenda(Instant.now())
 				.itens(new ArrayList<>())
 				.build();
+		
+		// 1. Validar Cliente
+		try {
+			Boolean clienteCadastrado = clienteClient.isCadastrado(vendaDTO.getClienteId()).getBody();
+			if (Boolean.FALSE.equals(clienteCadastrado)) {
+				throw new EntityNotFoundException("Cliente não encontrado: " + vendaDTO.getClienteId());
+			}
+		} catch (FeignException.NotFound e) {
+			throw new EntityNotFoundException("Cliente não encontrado: " + vendaDTO.getClienteId());
+		} catch (FeignException e) {
+			throw new IllegalStateException("Serviço de clientes indisponível", e);
+		}
 
-		vendaDTO.getItens().forEach(itemDTO -> {
-			try {
-				var response = produtoClient.buscarPorCodigo(itemDTO.getCodigoProduto());
-				ProdutoDTO produto = response.getBody();
+		// 2. Processar Itens com Reserva de Estoque
+		List<ItemVenda> itensProcessados = new ArrayList<>();
+		
+		try {
+			for (var itemDTO : vendaDTO.getItens()) {
+				// Busca Produto
+				ProdutoDTO produto;
+				try {
+					var response = produtoClient.buscarPorCodigo(itemDTO.getCodigoProduto());
+					produto = response.getBody();
+				} catch (FeignException.NotFound e) {
+					throw new EntityNotFoundException("Produto não encontrado: " + itemDTO.getCodigoProduto());
+				}
+
 				if (produto == null) {
 					throw new EntityNotFoundException("Produto não encontrado: " + itemDTO.getCodigoProduto());
 				}
+				
+				// Baixa Estoque
+				try {
+					produtoClient.baixarEstoque(itemDTO.getCodigoProduto(), itemDTO.getQuantidade());
+				} catch (FeignException e) {
+					throw new IllegalStateException("Erro ao baixar estoque do produto: " + itemDTO.getCodigoProduto() + ". Verifique se há saldo suficiente.", e);
+				}
+
 				ItemVenda item = ItemVenda.builder()
 						.produtoId(produto.getId())
 						.codigoProduto(produto.getCodigo())
@@ -53,13 +89,22 @@ public class CadastroVenda {
 						.quantidade(itemDTO.getQuantidade())
 						.valorUnitario(produto.getValor())
 						.build();
+				
+				itensProcessados.add(item);
 				venda.getItens().add(item);
-			} catch (FeignException.NotFound e) {
-				throw new EntityNotFoundException("Produto não encontrado: " + itemDTO.getCodigoProduto());
-			} catch (FeignException e) {
-				throw new IllegalStateException("Serviço de produtos indisponível ao buscar: " + itemDTO.getCodigoProduto(), e);
 			}
-		});
+		} catch (Exception e) {
+			// Rollback: Estornar estoque dos itens já processados
+			itensProcessados.forEach(item -> {
+				try {
+					produtoClient.reporEstoque(item.getCodigoProduto(), item.getQuantidade());
+				} catch (Exception ex) {
+					// Logar erro grave: Inconsistência de dados
+					System.err.println("ERRO GRAVE: Falha ao estornar estoque do produto " + item.getCodigoProduto());
+				}
+			});
+			throw e;
+		}
 
 		if (venda.getItens().isEmpty()) {
 			throw new IllegalStateException("Nenhum item válido foi adicionado à venda");
@@ -88,6 +133,16 @@ public class CadastroVenda {
 	public Venda cancelar(String codigo) {
 		Venda venda = vendaRepository.findByCodigo(codigo)
 				.orElseThrow(() -> new EntityNotFoundException(Venda.class.getSimpleName() + " não encontrada pelo código: " + codigo));
+		
+		// Estornar estoque ao cancelar
+		venda.getItens().forEach(item -> {
+			try {
+				produtoClient.reporEstoque(item.getCodigoProduto(), item.getQuantidade());
+			} catch (Exception e) {
+				System.err.println("ERRO: Falha ao estornar estoque no cancelamento da venda " + codigo + ", produto: " + item.getCodigoProduto());
+			}
+		});
+		
 		venda.setStatus(StatusVenda.CANCELADA);
 		return vendaRepository.save(venda);
 	}
@@ -109,4 +164,37 @@ public class CadastroVenda {
 		}
 		vendaRepository.deleteById(id);
 	}
+    
+    public Venda adicionarProduto(String id, String codigoProduto, Integer quantidade) {
+        Venda venda = vendaRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Venda não encontrada: " + id));
+        
+        if (venda.getStatus() != StatusVenda.INICIADA) {
+             throw new IllegalStateException("Não é possível adicionar produtos a uma venda com status: " + venda.getStatus());
+        }
+
+        // Busca Produto
+        ProdutoDTO produto;
+        try {
+            var response = produtoClient.buscarPorCodigo(codigoProduto);
+            produto = response.getBody();
+        } catch (FeignException.NotFound e) {
+            throw new EntityNotFoundException("Produto não encontrado: " + codigoProduto);
+        }
+
+        // Baixa Estoque
+        produtoClient.baixarEstoque(codigoProduto, quantidade);
+
+        ItemVenda item = ItemVenda.builder()
+                .produtoId(produto.getId())
+                .codigoProduto(produto.getCodigo())
+                .nome(produto.getNome())
+                .quantidade(quantidade)
+                .valorUnitario(produto.getValor())
+                .build();
+        
+        venda.getItens().add(item);
+        venda.setValorTotal(calcularValorTotal(venda));
+        return vendaRepository.save(venda);
+    }
 }

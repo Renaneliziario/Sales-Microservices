@@ -47,4 +47,9 @@ public class Produto {
 	@NotNull
 	@Schema(description = "Valor", nullable = false)
 	private BigDecimal valor;
+
+	@NotNull
+	@jakarta.validation.constraints.Min(0)
+	@Schema(description = "Quantidade em Estoque", nullable = false)
+	private Integer quantidade;
 }
