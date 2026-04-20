@@ -15,8 +15,7 @@
 
 ## ✨ Destaques Técnicos
 
-- **Arquitetura em Camadas (Controller, Service, Repos
-- itory)** — Separação clara de responsabilidades em todos os serviços.
+- **Arquitetura em Camadas (Controller, Service, Repository)** — Separação clara de responsabilidades em todos os serviços.
 - **DTO Pattern com Records (Java 21)** — Contratos de API seguros e imutáveis, isolando a camada de persistência.
 - **`@ControllerAdvice` estruturado** — Respostas de erro padronizadas e previsíveis em toda a aplicação.
 - **Bean Validation completo** — Validação de dados de entrada na borda da API.
