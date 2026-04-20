@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Local Documentation
+.gemini/
+SESSION_SUMMARY.md
+SESSION_SUMMARY*.md

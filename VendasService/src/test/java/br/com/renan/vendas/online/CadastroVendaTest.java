@@ -35,6 +35,9 @@ class CadastroVendaTest {
     @Mock
     private IProdutoClient produtoClient;
 
+    @Mock
+    private br.com.renan.vendas.online.client.IClienteClient clienteClient;
+
     @InjectMocks
     private CadastroVenda cadastroVenda;
 
@@ -49,6 +52,7 @@ class CadastroVendaTest {
                 .itens(List.of(ProdutoQuantidade.builder().codigoProduto("COD01").quantidade(2).build()))
                 .build();
 
+        when(clienteClient.isCadastrado("cliente1")).thenReturn(ResponseEntity.ok(true));
         when(produtoClient.buscarPorCodigo("COD01")).thenReturn(ResponseEntity.ok(produto));
         when(vendaRepository.save(any(Venda.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -68,6 +72,7 @@ class CadastroVendaTest {
                 .itens(List.of(ProdutoQuantidade.builder().codigoProduto("INVALIDO").quantidade(1).build()))
                 .build();
 
+        when(clienteClient.isCadastrado("cliente1")).thenReturn(ResponseEntity.ok(true));
         when(produtoClient.buscarPorCodigo("INVALIDO"))
                 .thenThrow(FeignException.NotFound.class);
 
@@ -84,6 +89,7 @@ class CadastroVendaTest {
                 .itens(List.of(ProdutoQuantidade.builder().codigoProduto("COD01").quantidade(1).build()))
                 .build();
 
+        when(clienteClient.isCadastrado("cliente1")).thenReturn(ResponseEntity.ok(true));
         when(produtoClient.buscarPorCodigo("COD01"))
                 .thenThrow(mock(FeignException.ServiceUnavailable.class));
 
@@ -114,7 +120,12 @@ class CadastroVendaTest {
 
     @Test
     void deveCancelarVendaComSucesso() {
-        Venda venda = Venda.builder().id("v1").codigo("V001").status(StatusVenda.INICIADA).build();
+        Venda venda = Venda.builder()
+                .id("v1")
+                .codigo("V001")
+                .status(StatusVenda.INICIADA)
+                .itens(new java.util.ArrayList<>())
+                .build();
         when(vendaRepository.findByCodigo("V001")).thenReturn(Optional.of(venda));
         when(vendaRepository.save(venda)).thenReturn(venda);
 
