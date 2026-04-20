@@ -23,12 +23,4 @@ target/
 .DS_Store
 Thumbs.db
 
-# Temporary and Local Files
-.gemini/
-SESSION_SUMMARY.md
-SESSION_SUMMARY*.md
 
-# Database
-postgres_data/
-
-.envSESSION_SUMMARY.md
