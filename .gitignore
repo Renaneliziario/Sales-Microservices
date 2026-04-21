@@ -1,26 +1,27 @@
-# Eclipse
-.project
-.classpath
-.settings/
-.metadata/
+# Local Configuration
+.env
+SESSION_SUMMARY.md
+SESSION_SUMMARY*.md
 
-# IntelliJ IDEA
+# Database Data
+postgres_data/
+
+# IDE Specific
 .idea/
 *.iml
-*.iws
-*.ipr
-
-# VS Code
 .vscode/
+.settings/
+.project
+.classpath
+.factorypath
 
-# Maven
+# Maven Build
 target/
+**/target/
+mvnw
+mvnw.cmd
+.mvn/
 
-# Logs
-*.log
-
-# OS
+# OS Specific
 .DS_Store
 Thumbs.db
-
-
