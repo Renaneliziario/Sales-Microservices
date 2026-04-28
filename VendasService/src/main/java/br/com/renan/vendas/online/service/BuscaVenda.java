@@ -10,23 +10,23 @@ import org.springframework.stereotype.Service;
 @Service
 public class BuscaVenda {
 
-	private final IVendaRepository vendaRepository;
+        private final IVendaRepository vendaRepository;
 
-	public BuscaVenda(IVendaRepository vendaRepository) {
-		this.vendaRepository = vendaRepository;
-	}
+        public BuscaVenda(IVendaRepository vendaRepository) {
+                this.vendaRepository = vendaRepository;
+        }
 
-	public Page<Venda> buscar(Pageable pageable) {  // ← Pageable correto
-		return vendaRepository.findAll(pageable);
-	}
+        public Page<Venda> buscar(Pageable pageable) {
+                return vendaRepository.findAll(pageable);
+        }
 
-	public Venda buscarPorId(String id) {
-		return vendaRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException(Venda.class.getSimpleName() + " não encontrado pelo id: " + id));
-	}
+        public Venda buscarPorId(Long id) {
+                return vendaRepository.findById(id)
+                                .orElseThrow(() -> new EntityNotFoundException(Venda.class.getSimpleName() + " não encontrado pelo id: " + id));
+        }
 
-	public Boolean isCadastrado(String id) {
-		return vendaRepository.existsById(id);
-	}
+        public Boolean isCadastrado(Long id) {
+                return vendaRepository.existsById(id);
+        }
 
 }

@@ -2,10 +2,18 @@ server:
   port: 8083
 
 spring:
-  data:
-    mongodb:
-      uri: mongodb://${MONGODB_HOST:127.0.0.1}:27017/venda
-      auto-index-creation: true
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/${DB_NAME_VENDA:vendadb}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
 
 management:
   endpoints:
@@ -15,3 +23,9 @@ management:
   endpoint:
     health:
       show-details: always
+
+services:
+  cliente:
+    url: http://localhost:8081
+  produto:
+    url: http://localhost:8082

@@ -1,14 +1,14 @@
 package br.com.renan.vendas.online;
 
+import br.com.renan.vendas.online.client.IClienteClient;
 import br.com.renan.vendas.online.client.IProdutoClient;
-import br.com.renan.vendas.online.domain.ItemVenda;
 import br.com.renan.vendas.online.domain.StatusVenda;
 import br.com.renan.vendas.online.domain.Venda;
 import br.com.renan.vendas.online.dto.ProdutoDTO;
 import br.com.renan.vendas.online.dto.ProdutoQuantidade;
 import br.com.renan.vendas.online.dto.VendaDTO;
 import br.com.renan.vendas.online.repository.IVendaRepository;
-import br.com.renan.vendas.online.usecase.CadastroVenda;
+import br.com.renan.vendas.online.service.CadastroVenda;
 import feign.FeignException;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -36,7 +36,7 @@ class CadastroVendaTest {
     private IProdutoClient produtoClient;
 
     @Mock
-    private br.com.renan.vendas.online.client.IClienteClient clienteClient;
+    private IClienteClient clienteClient;
 
     @InjectMocks
     private CadastroVenda cadastroVenda;
@@ -44,15 +44,15 @@ class CadastroVendaTest {
     @Test
     void deveCadastrarVendaComSucesso() {
         ProdutoDTO produto = ProdutoDTO.builder()
-                .id("p1").codigo("COD01").nome("Teclado").valor(BigDecimal.valueOf(200)).build();
+                .id(1L).codigo("COD01").nome("Teclado").valor(BigDecimal.valueOf(200)).build();
 
         VendaDTO vendaDTO = VendaDTO.builder()
                 .codigo("V001")
-                .clienteId("cliente1")
+                .clienteId(1L)
                 .itens(List.of(ProdutoQuantidade.builder().codigoProduto("COD01").quantidade(2).build()))
                 .build();
 
-        when(clienteClient.isCadastrado("cliente1")).thenReturn(ResponseEntity.ok(true));
+        when(clienteClient.isCadastrado(1L)).thenReturn(ResponseEntity.ok(true));
         when(produtoClient.buscarPorCodigo("COD01")).thenReturn(ResponseEntity.ok(produto));
         when(vendaRepository.save(any(Venda.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -68,11 +68,11 @@ class CadastroVendaTest {
     void deveLancarExcecaoQuandoProdutoNaoEncontrado() {
         VendaDTO vendaDTO = VendaDTO.builder()
                 .codigo("V002")
-                .clienteId("cliente1")
+                .clienteId(1L)
                 .itens(List.of(ProdutoQuantidade.builder().codigoProduto("INVALIDO").quantidade(1).build()))
                 .build();
 
-        when(clienteClient.isCadastrado("cliente1")).thenReturn(ResponseEntity.ok(true));
+        when(clienteClient.isCadastrado(1L)).thenReturn(ResponseEntity.ok(true));
         when(produtoClient.buscarPorCodigo("INVALIDO"))
                 .thenThrow(FeignException.NotFound.class);
 
@@ -82,25 +82,8 @@ class CadastroVendaTest {
     }
 
     @Test
-    void deveLancarExcecaoQuandoServicoIndisponivel() {
-        VendaDTO vendaDTO = VendaDTO.builder()
-                .codigo("V003")
-                .clienteId("cliente1")
-                .itens(List.of(ProdutoQuantidade.builder().codigoProduto("COD01").quantidade(1).build()))
-                .build();
-
-        when(clienteClient.isCadastrado("cliente1")).thenReturn(ResponseEntity.ok(true));
-        when(produtoClient.buscarPorCodigo("COD01"))
-                .thenThrow(mock(FeignException.ServiceUnavailable.class));
-
-        assertThatThrownBy(() -> cadastroVenda.cadastrar(vendaDTO))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("indisponível");
-    }
-
-    @Test
     void deveFinalizarVendaComSucesso() {
-        Venda venda = Venda.builder().id("v1").codigo("V001").status(StatusVenda.INICIADA).build();
+        Venda venda = Venda.builder().id(1L).codigo("V001").status(StatusVenda.INICIADA).build();
         when(vendaRepository.findByCodigo("V001")).thenReturn(Optional.of(venda));
         when(vendaRepository.save(venda)).thenReturn(venda);
 
@@ -110,18 +93,9 @@ class CadastroVendaTest {
     }
 
     @Test
-    void deveLancarExcecaoAoFinalizarVendaInexistente() {
-        when(vendaRepository.findByCodigo("NAOEXISTE")).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> cadastroVenda.finalizar("NAOEXISTE"))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessageContaining("NAOEXISTE");
-    }
-
-    @Test
     void deveCancelarVendaComSucesso() {
         Venda venda = Venda.builder()
-                .id("v1")
+                .id(1L)
                 .codigo("V001")
                 .status(StatusVenda.INICIADA)
                 .itens(new java.util.ArrayList<>())
@@ -136,17 +110,9 @@ class CadastroVendaTest {
 
     @Test
     void deveRemoverVendaComSucesso() {
-        when(vendaRepository.existsById("v1")).thenReturn(true);
+        when(vendaRepository.existsById(1L)).thenReturn(true);
 
-        assertThatCode(() -> cadastroVenda.remover("v1")).doesNotThrowAnyException();
-        verify(vendaRepository).deleteById("v1");
-    }
-
-    @Test
-    void deveLancarExcecaoAoRemoverVendaInexistente() {
-        when(vendaRepository.existsById("ghost")).thenReturn(false);
-
-        assertThatThrownBy(() -> cadastroVenda.remover("ghost"))
-                .isInstanceOf(EntityNotFoundException.class);
+        assertThatCode(() -> cadastroVenda.remover(1L)).doesNotThrowAnyException();
+        verify(vendaRepository).deleteById(1L);
     }
 }

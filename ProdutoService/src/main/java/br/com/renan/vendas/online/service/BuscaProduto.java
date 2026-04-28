@@ -20,7 +20,7 @@ public class BuscaProduto {
 		return produtoRepository.findAll(pageable);
 	}
 
-	public Produto buscarPorId(String id) {
+	public Produto buscarPorId(Long id) {
 		return produtoRepository.findById(id)
 				.orElseThrow(() -> new EntityNotFoundException(Produto.class.getSimpleName() + " não encontrado pelo id: " + id));
 	}
@@ -30,7 +30,7 @@ public class BuscaProduto {
 				.orElseThrow(() -> new EntityNotFoundException(Produto.class.getSimpleName() + " não encontrado pelo código: " + codigo));
 	}
 
-	public Boolean isCadastrado(String id) {
+	public Boolean isCadastrado(Long id) {
 		return produtoRepository.existsById(id);
 	}
 

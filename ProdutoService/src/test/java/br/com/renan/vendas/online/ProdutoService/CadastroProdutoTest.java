@@ -2,7 +2,7 @@ package br.com.renan.vendas.online.ProdutoService;
 
 import br.com.renan.vendas.online.domain.Produto;
 import br.com.renan.vendas.online.repository.IProdutoRepository;
-import br.com.renan.vendas.online.usecase.CadastroProduto;
+import br.com.renan.vendas.online.service.CadastroProduto;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,7 +11,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -38,8 +37,8 @@ class CadastroProdutoTest {
 
     @Test
     void deveAtualizarProdutoComSucesso() {
-        Produto produto = Produto.builder().id("p1").nome("Mouse").valor(BigDecimal.valueOf(150)).build();
-        when(produtoRepository.existsById("p1")).thenReturn(true);
+        Produto produto = Produto.builder().id(1L).nome("Mouse").valor(BigDecimal.valueOf(150)).build();
+        when(produtoRepository.existsById(1L)).thenReturn(true);
         when(produtoRepository.save(produto)).thenReturn(produto);
 
         Produto resultado = cadastroProduto.atualizar(produto);
@@ -58,8 +57,8 @@ class CadastroProdutoTest {
 
     @Test
     void deveLancarExcecaoAoAtualizarProdutoInexistente() {
-        Produto produto = Produto.builder().id("naoexiste").nome("Ghost").build();
-        when(produtoRepository.existsById("naoexiste")).thenReturn(false);
+        Produto produto = Produto.builder().id(99L).nome("Ghost").build();
+        when(produtoRepository.existsById(99L)).thenReturn(false);
 
         assertThatThrownBy(() -> cadastroProduto.atualizar(produto))
                 .isInstanceOf(EntityNotFoundException.class);
@@ -67,17 +66,17 @@ class CadastroProdutoTest {
 
     @Test
     void deveRemoverProdutoComSucesso() {
-        when(produtoRepository.existsById("p1")).thenReturn(true);
+        when(produtoRepository.existsById(1L)).thenReturn(true);
 
-        assertThatCode(() -> cadastroProduto.remover("p1")).doesNotThrowAnyException();
-        verify(produtoRepository).deleteById("p1");
+        assertThatCode(() -> cadastroProduto.remover(1L)).doesNotThrowAnyException();
+        verify(produtoRepository).deleteById(1L);
     }
 
     @Test
     void deveLancarExcecaoAoRemoverProdutoInexistente() {
-        when(produtoRepository.existsById("ghost")).thenReturn(false);
+        when(produtoRepository.existsById(99L)).thenReturn(false);
 
-        assertThatThrownBy(() -> cadastroProduto.remover("ghost"))
+        assertThatThrownBy(() -> cadastroProduto.remover(99L))
                 .isInstanceOf(EntityNotFoundException.class);
     }
 }

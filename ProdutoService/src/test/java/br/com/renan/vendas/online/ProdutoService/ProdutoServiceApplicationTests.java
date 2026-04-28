@@ -2,14 +2,10 @@ package br.com.renan.vendas.online.ProdutoService;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.NONE,
-    properties = {
-        "spring.config.import=",
-        "spring.data.mongodb.uri=mongodb://localhost:27017/test"
-    }
-)
+@SpringBootTest
+@ActiveProfiles("test")
 class ProdutoServiceApplicationTests {
 
     @Test

@@ -9,5 +9,5 @@ import org.springframework.web.bind.annotation.PathVariable;
 public interface IClienteClient {
 
     @GetMapping("/cliente/isCadastrado/{id}")
-    ResponseEntity<Boolean> isCadastrado(@PathVariable("id") String id);
+    ResponseEntity<Boolean> isCadastrado(@PathVariable("id") Long id);
 }

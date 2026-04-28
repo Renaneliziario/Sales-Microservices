@@ -31,7 +31,7 @@ public class CadastroProduto {
 		return produtoRepository.save(produto);
 	}
 
-	public void remover(String id) {
+	public void remover(Long id) {
 		if (!produtoRepository.existsById(id)) {
 			throw new EntityNotFoundException(Produto.class.getSimpleName() + " não encontrado pelo id: " + id);
 		}

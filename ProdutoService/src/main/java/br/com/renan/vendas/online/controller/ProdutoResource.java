@@ -47,7 +47,7 @@ public class ProdutoResource {
     }
 
     @GetMapping(value = "/id/{id}")
-    public ResponseEntity<Produto> buscarPorId(@PathVariable String id) {
+    public ResponseEntity<Produto> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(buscaProduto.buscarPorId(id));
     }
 
@@ -57,7 +57,7 @@ public class ProdutoResource {
     }
 
     @GetMapping(value = "/isCadastrado/{id}")
-    public ResponseEntity<Boolean> isCadastrado(@PathVariable String id) {
+    public ResponseEntity<Boolean> isCadastrado(@PathVariable Long id) {
         return ResponseEntity.ok(buscaProduto.isCadastrado(id));
     }
 
@@ -67,7 +67,7 @@ public class ProdutoResource {
     }
 
     @DeleteMapping(value = "/{id}")
-    public ResponseEntity<Void> remover(@PathVariable String id) {
+    public ResponseEntity<Void> remover(@PathVariable Long id) {
         cadastroProduto.remover(id);
         return ResponseEntity.noContent().build();
     }

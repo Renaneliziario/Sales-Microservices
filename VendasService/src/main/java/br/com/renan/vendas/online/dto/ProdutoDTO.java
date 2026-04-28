@@ -13,7 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Builder
 public class ProdutoDTO {
-    private String id;
+    private Long id;
     private String codigo;
     private String nome;
     private BigDecimal valor;

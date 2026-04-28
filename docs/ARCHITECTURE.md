@@ -1,84 +1,55 @@
-# Arquitetura — Sales-Microservices
+# 🏗️ Guia de Arquitetura
 
-## Visão Geral
-Ecossistema de microserviços para gestão comercial (Clientes, Produtos, Vendas), construído com Spring Boot 3.4.5 e Java 21. A arquitetura utiliza **PostgreSQL** como banco de dados relacional, garantindo consistência e integridade, e **Spring Cloud Config** para gerenciamento centralizado de configurações. Os serviços são independentes e se comunicam via APIs REST.
+Este documento detalha as decisões técnicas e os padrões de design adotados para garantir que o sistema seja resiliente, escalável e de fácil manutenção.
 
-> **Status:** O `ClienteService` foi totalmente migrado para a nova arquitetura com PostgreSQL e pacotes padronizados. Os demais serviços estão em processo de modernização.
+## 🏛️ Padrão Arquitetural: Microsserviços
 
----
+O sistema adota a decomposição baseada em domínios de negócio. Cada serviço é independente, possuindo sua própria lógica, infraestrutura e ciclo de vida.
 
-## Mapa de Serviços
-```
-Sales-Microservices/
-│
-├── ConfigServer/       → Gerenciamento centralizado de configurações (Spring Cloud Config)
-├── ClienteService/     → CRUD de clientes com persistência PostgreSQL ✅
-├── ProdutoService/     → CRUD de produtos (em migração para PostgreSQL) 🚧
-└── VendasService/      → Orquestração de vendas (em migração para PostgreSQL) 🚧
-```
+### Componentes Chave da Infraestrutura
 
----
+1.  **Configuração Centralizada (Spring Cloud Config):**
+    - Para evitar que propriedades (como URLs de banco ou senhas) fiquem espalhadas no código, utilizamos um Servidor de Configuração.
+    - Isso permite mudar o comportamento do sistema (ex: trocar de banco `dev` para `prod`) sem precisar recompilar as aplicações.
 
-## Arquitetura de Alto Nível
-```
-                    ┌─────────────────┐
-                    │   Config Server  │  ← Porta 8888
-                    │  (Spring Cloud)  │
-                    └────────┬────────┘
-                             │ fornece configurações na inicialização
-              ┌──────────────┼──────────────┐
-              ▼              ▼              ▼
-    ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-    │ClienteService│  │ProdutoService│  │VendasService │
-    │  Porta 8081  │  │  Porta 8082  │  │  Porta 8083  │
-    └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
-           │                 │                 │
-           ▼                 ▼        Feign Client (HTTP)
-      PostgreSQL        PostgreSQL    ├── valida cliente → ClienteService
-                                      ├── busca produto → ProdutoService
-                                      ├── baixa estoque → ProdutoService
-                                      └── repõe estoque (rollback) → ProdutoService
-```
----
-
-## Decisões de Arquitetura
-
-### 1. Migração para PostgreSQL: A Busca por Consistência
-O projeto foi inicialmente concebido com MongoDB (NoSQL), mas evoluiu para **PostgreSQL (SQL)** para atender a requisitos de consistência e integridade de dados, fundamentais em sistemas transacionais, além de ser uma excelente oportunidade de aprendizado. As principais motivações técnicas foram:
-- **Conformidade ACID:** PostgreSQL garante que as transações (como uma venda) sejam Atômicas, Consistentes, Isoladas e Duráveis. Isso impede cenários como uma venda ser registrada sem que o estoque do produto seja debitado.
-- **Integridade Referencial:** O uso de chaves estrangeiras (`foreign keys`) garante que não seja possível criar uma venda para um cliente que não existe, ou registrar um item de venda para um produto inexistente. Essa validação é feita pelo próprio banco de dados, adicionando uma camada robusta de segurança.
-- **Padrão Corporativo:** Bancos de dados relacionais são a espinha dorsal da maioria dos sistemas corporativos. Dominar JPA/Hibernate com PostgreSQL é uma habilidade essencial para o mercado de trabalho.
-
-### 2. Estrutura de Pacotes Padronizada (Clean Architecture)
-Para promover clareza, testabilidade e manutenibilidade, todos os serviços seguirão uma estrutura de pacotes uniforme, baseada em responsabilidades:
-```
-src/main/java/br/com/renan/vendas/online/
-├── domain/           → Entidades JPA (@Entity) que representam as tabelas do banco.
-├── repository/       → Interfaces Spring Data JPA para acesso ao banco.
-├── service/          → Camada de serviço que contém a lógica de negócio principal.
-├── controller/       → Endpoints REST (@RestController) que expõem a API.
-├── exception/        → Tratamento global de erros da aplicação (@ControllerAdvice).
-├── dto/              → Data Transfer Objects (Records) para desacoplar a API da persistência.
-└── config/           → Configurações de Beans do Spring (ex: OpenAPI).
-```
-Essa separação garante que a lógica de negócio (`service`) não está acoplada à tecnologia de exposição (web/`controller`), e que a camada de persistência (`domain`/`repository`) pode ser trocada sem impactar o resto da aplicação.
-
-### 3. Comunicação entre Serviços (Feign e Circuit Breaker)
-A comunicação síncrona entre serviços (ex: `VendasService` consultando `ProdutoService`) é realizada via **OpenFeign**. Para proteger o sistema contra falhas em cascata, o **Resilience4j** atua como um *Circuit Breaker*: se um serviço chamado estiver indisponível, o Circuit Breaker interrompe a chamada e aciona um método de *fallback*, evitando que o serviço chamador fique travado e garantindo uma resposta controlada ao usuário.
+2.  **Isolamento de Dados (Database per Service):**
+    - Cada microsserviço possui seu próprio banco de dados físico no PostgreSQL.
+    - **Por que isso é importante?** Garante o desacoplamento. Um erro em uma tabela do `VendasService` não impede o `ClienteService` de continuar funcionando. Além disso, permite que cada banco cresça de forma independente.
 
 ---
 
-## Roadmap de Desenvolvimento
-| Funcionalidade | Status |
-|---|---|
-| Config Server com Spring Cloud | ✅ Implementado |
-| `ClienteService` — Migração para PostgreSQL e DTOs | ✅ Implementado |
-| `ClienteService` — Documentação Swagger e tratamento de erros | ✅ Implementado |
-| Padronização de estrutura de pacotes (`controller`, `service`) | 🚧 Em Andamento |
-| `ProdutoService` — Migração para PostgreSQL | 📋 Próximo passo |
-| `VendasService` — Migração para PostgreSQL | 📋 Próximo passo |
-| Comunicação inter-serviços com Feign e Circuit Breaker | ✅ Implementado |
-| Spring Actuator (health check) | ✅ Implementado |
-| Service Discovery (Eureka) | 📋 Fora do escopo atual |
-| Containerizar os microserviços (Dockerfile) | 📋 Próximo passo |
-| API Gateway (Spring Cloud Gateway) | 📋 Próximo passo |
+## 🔗 Comunicação e Integração
+
+Os serviços utilizam **OpenFeign** para realizar chamadas síncronas entre si de forma declarativa e limpa.
+
+- **Fluxo de Agregação:** O `VendasService` atua como um orquestrador. Ao receber um pedido, ele consulta o `ClienteService` para validar o comprador e o `ProdutoService` para verificar e baixar o estoque.
+- **Resiliência:** Implementamos o **Resilience4j** para lidar com falhas de rede ou lentidão em serviços externos, evitando que uma falha em um serviço derrube todo o ecossistema (Circuit Breaker).
+
+---
+
+## 💾 Modelo de Dados e Persistência
+
+Utilizamos **Spring Data JPA** com **PostgreSQL**.
+
+- **Migração MongoDB para PostgreSQL:** Optamos por um banco relacional para garantir a integridade dos dados (Transações ACID). Em um sistema de vendas, é crucial garantir que a baixa do estoque e o registro da venda aconteçam exatamente ao mesmo tempo ou nada seja salvo.
+- **Identidade:** Utilizamos IDs do tipo `Long` com estratégia `IDENTITY`, otimizando a indexação e busca no banco de dados.
+- **Relacionamentos:** O relacionamento entre `Venda` e `ItemVenda` é gerenciado via JPA com `CascadeType.ALL`, garantindo que os itens da venda sigam o mesmo ciclo de vida do pedido pai.
+
+---
+
+## 🛡️ Estratégia de Testes
+
+A qualidade do código é validada em três níveis:
+
+1.  **Testes Unitários:** Validam a lógica de negócio interna dos serviços sem dependências externas.
+2.  **Testes de Integração:** Utilizam o banco **H2 em memória** para validar se o mapeamento do JPA e os repositórios estão funcionando corretamente sem precisar de um banco de dados real instalado.
+3.  **Mocks de Serviços:** Usamos Mockito para simular a resposta de serviços externos (como Feign Clients), permitindo testar um serviço mesmo que os outros estejam desligados.
+
+---
+
+## 🛠️ Tecnologias Adotadas e Motivação
+
+- **Java 17 (LTS):** Escolhida por ser a versão estável de suporte a longo prazo, trazendo melhorias de performance e sintaxes modernas como *Records*.
+- **Spring Boot 3.4.x:** Aproveita o que há de mais moderno em autoconfiguração e suporte a microsserviços.
+- **PostgreSQL 16:** Banco de dados relacional robusto para garantir consistência em operações financeiras e de estoque.
+- **Docker:** Utilizado para garantir que qualquer desenvolvedor consiga rodar exatamente o mesmo ambiente, eliminando o clássico problema do "na minha máquina funciona".

@@ -1,130 +1,86 @@
-# Sales-Microservices
+# 🛒 Sales Microservices Ecosystem
 
-![Java](https://img.shields.io/badge/Java-21%20LTS-ED8B00?style=flat&logo=openjdk&logoColor=white)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.5-6DB33F?style=flat&logo=springboot&logoColor=white)
-![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-2024.0-6DB33F?style=flat&logo=spring&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/SQL-PostgreSQL-336791?style=flat&logo=postgresql&logoColor=white)
-![Docker](https://img.shields.io/badge/Infra-Docker-2496ED?style=flat&logo=docker&logoColor=white)
-![Swagger](https://img.shields.io/badge/Docs-Swagger%20%7C%20OpenAPI-85EA2D?style=flat&logo=swagger&logoColor=black)
+Este projeto é um ecossistema de microsserviços desenvolvido para gestão de vendas, focado em alta disponibilidade, isolamento de domínios e escalabilidade. A arquitetura utiliza as tecnologias mais recentes do ecossistema Spring e segue as melhores práticas de engenharia de software.
 
-> Ecossistema de microserviços para gestão comercial construído com **Spring Boot 3.4.5**, **Java 21** e **PostgreSQL**. A arquitetura foi migrada de um banco NoSQL (MongoDB) para um banco Relacional (PostgreSQL) para fortalecer a integridade dos dados e alinhar com padrões corporativos consolidados.
+![Java](https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=openjdk)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.5-brightgreen?style=for-the-badge&logo=springboot)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?style=for-the-badge&logo=postgresql)
+![Docker](https://img.shields.io/badge/Docker-Enabled-blue?style=for-the-badge&logo=docker)
 
-> 📐 Quer entender as decisões técnicas e de arquitetura? Veja o guia detalhado em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+## 📋 Sobre o Projeto
 
----
+O sistema é composto por 4 módulos principais que trabalham de forma coordenada:
+1.  **Config Server**: Centralizador de configurações.
+2.  **Cliente Service**: Gestão de dados cadastrais de clientes.
+3.  **Produto Service**: Controle de catálogo e estoque de produtos.
+4.  **Vendas Service**: Orquestrador de pedidos que integra clientes e produtos.
 
-## ✨ Destaques Técnicos
-
-- **Arquitetura em Camadas (Controller, Service, Repository)** — Separação clara de responsabilidades em todos os serviços.
-- **DTO Pattern com Records (Java 21)** — Contratos de API seguros e imutáveis, isolando a camada de persistência.
-- **`@ControllerAdvice` estruturado** — Respostas de erro padronizadas e previsíveis em toda a aplicação.
-- **Bean Validation completo** — Validação de dados de entrada na borda da API.
-- **Injeção de Dependências via Construtor** — Código testável e com baixo acoplamento.
-- **Paginação nativa** com `Pageable` do Spring Data JPA.
-- **OpenAPI/Swagger** configurado para documentação de API interativa.
-- **Spring Data JPA e Hibernate** para persistência de dados relacional.
-- **Spring Cloud Config Server** centralizando configurações externas.
-- **Feign Client** com **Circuit Breaker (Resilience4j)** para comunicação inter-serviços resiliente.
+### Principais Funcionalidades
+- ✅ Cadastro completo de Clientes e Produtos.
+- ✅ Gestão de estoque com baixa automática e reposição.
+- ✅ Fluxo de venda completo com cálculo de totais e validação de disponibilidade.
+- ✅ Configurações centralizadas para facilitar a manutenção e deploy.
 
 ---
 
-## 🏗️ Arquitetura dos Serviços
+## 🚀 Como Iniciar
 
-```
-┌──────────────────────────────────────────────────────┐
-│           Config Server  :8888                       │
-│   Centraliza application.yml de todos os serviços   │
-└──────────────────────────────────────────────────────┘
-           ↑ busca config na inicialização
-┌──────────┴──────────┬────────────────┬───────────────┐
-│  ClienteService     │  ProdutoService│ VendasService │
-│  :8081  ✅ Ativo    │  :8082         │ :8083         │
-│  PostgreSQL         │  (Em Migração) │ (Em Migração) │
-└─────────────────────┴────────────────┴───────┬───────┘
-                                               │
-                              consulta produto via Feign
-                                               ↓
-                                       ProdutoService
-```
+### Pré-requisitos
+- Docker e Docker Compose instalados.
+- Java 17 instalado (para execução local).
+- Maven instalado.
 
-### Endpoints (Exemplo: ClienteService)
-
-| Método | Endpoint | Descrição |
-|:---|:---|:---|
-| `GET` | `/clientes?page=0&size=10` | Lista paginada de clientes |
-| `POST` | `/clientes` | Cadastra novo cliente — retorna `201 Created` |
-| `GET` | `/clientes/{id}` | Busca por ID (404 estruturado se não encontrado) |
-| `PUT` | `/clientes/{id}` | Atualiza cliente existente |
-| `DELETE` | `/clientes/{id}` | Remove cliente — retorna `204 No Content` |
-
----
-
-## 🛠️ Tecnologias
-
-| Tecnologia | Versão | Uso |
-|:---|:---|:---|
-| Java | 21 LTS | Linguagem principal |
-| Spring Boot | 3.4.5 | Framework base dos microserviços |
-| Spring Cloud | 2024.0.0 | Config Server centralizado |
-| Spring Data JPA | latest | Repositórios relacionais com Hibernate |
-| OpenFeign | latest | Comunicação HTTP entre serviços |
-| Resilience4j | latest | Circuit Breaker para resiliência |
-| Spring Actuator | latest | Endpoints de monitoramento e saúde |
-| PostgreSQL | latest | Banco de dados relacional |
-| Docker | latest | Infraestrutura local (PostgreSQL) |
-| Lombok | latest | Redução de boilerplate |
-| Springdoc OpenAPI | latest | Documentação de API |
-| Bean Validation | Jakarta EE | Validação de dados |
-| JUnit 5 + Mockito | latest | Testes unitários |
-
----
-
-## 🚀 Como Executar
-
-**Pré-requisitos:** JDK 21+, Maven 3+, Docker
-
+### Passo 1: Infraestrutura (PostgreSQL)
+O projeto utiliza bancos de dados isolados para cada serviço. Suba o container do banco:
 ```bash
-# 1. Suba o PostgreSQL via Docker Compose
 docker-compose up -d
 ```
+*Nota: Este comando já cria automaticamente os bancos `clientedb`, `produtodb` e `vendadb`.*
 
-```yaml
-# docker-compose.yml
-services:
-  postgres_db:
-    image: postgres
-    container_name: postgres_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./postgres_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_DB=clientedb
-```
+### Passo 2: Config Server (Obrigatório primeiro)
+Todos os outros serviços buscam suas configurações aqui.
 
+**No Linux/macOS:**
 ```bash
-# 2. Inicie o Config Server (OBRIGATÓRIO primeiro)
 cd ConfigServer
 ./mvnw spring-boot:run
+```
 
-# 3. Inicie o ClienteService
-cd ClienteService
-./mvnw spring-boot:run
+**No Windows (Command Prompt ou PowerShell):**
+```cmd
+cd ConfigServer
+mvnw.cmd spring-boot:run
+```
 
-# (Outros serviços em desenvolvimento)
+### Passo 3: Serviços de Domínio
+Abra um terminal para cada serviço e execute o comando correspondente ao seu sistema:
+
+**No Linux/macOS:**
+```bash
+# Exemplo para o serviço de Vendas
+cd VendasService && ./mvnw spring-boot:run
+```
+
+**No Windows:**
+```cmd
+# Exemplo para o serviço de Vendas
+cd VendasService
+mvnw.cmd spring-boot:run
 ```
 
 ---
 
-## 📄 Documentação da API (Swagger UI)
-
-Com o `ClienteService` rodando, acesse a documentação interativa:
-
-| Serviço | Swagger UI |
-|:---|:---|
-| ClienteService | `http://localhost:8081/swagger-ui.html` |
+## 🔗 Documentação das APIs (Swagger)
+Após iniciar os serviços, as APIs podem ser testadas via Swagger UI:
+- **Clientes**: [http://localhost:8081/swagger-ui/index.html](http://localhost:8081/swagger-ui/index.html)
+- **Produtos**: [http://localhost:8082/swagger-ui/index.html](http://localhost:8082/swagger-ui/index.html)
+- **Vendas**: [http://localhost:8083/swagger-ui/index.html](http://localhost:8083/swagger-ui/index.html)
 
 ---
-*Desenvolvido por [Renan Queiroz Eliziario](https://www.linkedin.com/in/renaneliziario/) · [Portfólio completo no GitHub](https://github.com/Renaneliziario)*
+
+## 🧪 Qualidade e Testes
+O projeto possui uma suíte de testes que cobre desde regras unitárias até fluxos integrados entre serviços. Para rodar todos os testes (utilizando banco H2 em memória):
+```bash
+mvn test
+```
+*Isso garante que as alterações não introduziram regressões no comportamento do sistema.*

@@ -1,0 +1,3 @@
+CREATE DATABASE clientedb;
+CREATE DATABASE produtodb;
+CREATE DATABASE vendadb;

@@ -21,7 +21,7 @@ public class VendaDTO {
     private String codigo;
 
     @NotNull
-    private String clienteId;
+    private Long clienteId;
 
     @NotEmpty(message = "A venda deve ter ao menos um item")
     private List<ProdutoQuantidade> itens;
