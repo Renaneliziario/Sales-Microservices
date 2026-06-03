@@ -7,10 +7,36 @@ Este projeto é um ecossistema de microsserviços desenvolvido para gestão de v
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?style=for-the-badge&logo=postgresql)
 ![Docker](https://img.shields.io/badge/Docker-Enabled-blue?style=for-the-badge&logo=docker)
 
+## 🏗️ Arquitetura
+
+```
+                    ┌─────────────────────┐
+                    │    Config Server    │  :8888
+                    │  (Spring Cloud)     │
+                    └────────┬────────────┘
+                             │ fornece configs
+          ┌──────────────────┼──────────────────┐
+          ▼                  ▼                  ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│ Cliente Service │ │ Produto Service │ │ Vendas Service  │
+│    :8081        │ │    :8082        │ │    :8083        │
+│  Swagger UI ✓   │ │  Swagger UI ✓   │ │  Swagger UI ✓   │
+└────────┬────────┘ └────────┬────────┘ └────────┬────────┘
+         │                   │                   │
+         ▼                   ▼                   ▼
+    [clientedb]         [produtodb]          [vendadb]
+    PostgreSQL          PostgreSQL           PostgreSQL
+    (isolado)           (isolado)            (isolado)
+```
+
+Cada serviço possui seu próprio banco de dados PostgreSQL — sem compartilhamento de schema entre domínios.
+
+---
+
 ## 📋 Sobre o Projeto
 
 O sistema é composto por 4 módulos principais que trabalham de forma coordenada:
-1.  **Config Server**: Centralizador de configurações.
+1.  **Config Server**: Centralizador de configurações para os 3 serviços de domínio.
 2.  **Cliente Service**: Gestão de dados cadastrais de clientes.
 3.  **Produto Service**: Controle de catálogo e estoque de produtos.
 4.  **Vendas Service**: Orquestrador de pedidos que integra clientes e produtos.
@@ -79,8 +105,23 @@ Após iniciar os serviços, as APIs podem ser testadas via Swagger UI:
 ---
 
 ## 🧪 Qualidade e Testes
-O projeto possui uma suíte de testes que cobre desde regras unitárias até fluxos integrados entre serviços. Para rodar todos os testes (utilizando banco H2 em memória):
+O projeto possui uma suíte de testes que cobre desde regras unitárias até fluxos integrados entre serviços. Os testes utilizam banco H2 em memória — nenhuma dependência externa necessária:
 ```bash
-mvn test
+# Em cada serviço (Linux/macOS):
+./mvnw test
+
+# No Windows:
+mvnw.cmd test
 ```
-*Isso garante que as alterações não introduziram regressões no comportamento do sistema.*
+
+---
+
+## 📌 Contexto no Portfólio
+
+Este é o projeto de maior complexidade técnica de uma trilha de evolução deliberada:
+
+`UserControl (POO)` → `QualityGuard (Testes)` → `SalesSystem-JDBC` → `SalesPersistence-JPA` → **`Sales-Microservices`**
+
+---
+
+*Desenvolvido por [Renan Queiroz Eliziario](https://www.linkedin.com/in/renaneliziario/) · [Portfólio completo no GitHub](https://github.com/Renaneliziario)*
