@@ -59,7 +59,7 @@ O sistema é composto por 4 módulos principais que trabalham de forma coordenad
 ### Passo 1: Infraestrutura (PostgreSQL)
 O projeto utiliza bancos de dados isolados para cada serviço. Suba o container do banco:
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 *Nota: Este comando já cria automaticamente os bancos `clientedb`, `produtodb` e `vendadb`.*
 
