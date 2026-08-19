@@ -6,56 +6,37 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.5</version>
-        <relativePath/>
+        <groupId>br.com.renan.vendas.online</groupId>
+        <artifactId>sales-microservices</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <groupId>br.com.renan.vendas.online</groupId>
     <artifactId>ConfigServer</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
     <name>ConfigServer</name>
     <description>Config Server</description>
 
-    <properties>
-        <java.version>17</java.version>
-    </properties>
-
-    <!-- 🔥 ESSENCIAL PRA SPRING CLOUD -->
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>2024.0.0</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
 
-        <!-- 🌐 API -->
+        <!-- API -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- 🔐 Segurança (opcional, mas recomendado) -->
+        <!-- Seguranca (opcional, mas recomendado) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
-        <!-- 🔥 CONFIG SERVER (o mais importante) -->
+        <!-- CONFIG SERVER (o mais importante) -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-config-server</artifactId>
         </dependency>
 
-        <!-- 🔄 Devtools -->
+        <!-- Devtools -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
@@ -63,7 +44,7 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- 🧪 Testes -->
+        <!-- Testes -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -73,10 +54,8 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.8.5</version>
+            <version>${springdoc.version}</version>
         </dependency>
-
-
 
     </dependencies>
 
