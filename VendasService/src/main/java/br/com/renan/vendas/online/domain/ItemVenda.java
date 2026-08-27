@@ -1,6 +1,7 @@
 package br.com.renan.vendas.online.domain;
 
 import java.math.BigDecimal;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,5 +39,6 @@ public class ItemVenda {
 
     @ManyToOne
     @JoinColumn(name = "venda_id", nullable = false)
+    @JsonIgnore
     private Venda venda;
 }
