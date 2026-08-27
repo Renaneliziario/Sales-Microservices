@@ -16,6 +16,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+// itens aqui é List<ProdutoQuantidade> (só código+quantidade) - o VendaDTO não carrega
+// preço nem nome, isso é responsabilidade do ProdutoService, buscado no CadastroVenda
 public class VendaDTO {
 
     @NotNull

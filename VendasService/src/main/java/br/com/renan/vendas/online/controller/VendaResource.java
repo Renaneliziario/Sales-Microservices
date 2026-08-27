@@ -56,6 +56,8 @@ public class VendaResource {
                 return ResponseEntity.ok(cadastroVenda.cadastrar(venda));
         }
 
+        // path meio fora do padrão REST (verbo e tudo como path variable em vez de
+        // corpo), mas manteve assim pra não quebrar quem já chama esse endpoint
         @PutMapping("/{id}/{codigoProduto}/{quantidade}/addProduto")
         public ResponseEntity<Venda> adicionarProduto(
                         @PathVariable(name = "id", required = true) Long id,

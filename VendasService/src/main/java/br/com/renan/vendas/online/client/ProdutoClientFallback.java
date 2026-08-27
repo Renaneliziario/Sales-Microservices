@@ -5,6 +5,8 @@ import org.springframework.stereotype.Component;
 
 import br.com.renan.vendas.online.dto.ProdutoDTO;
 
+// escrito certo, mas hoje inerte pelo mesmo motivo do ClienteClientFallback - ver
+// o comentário no IProdutoClient
 @Component
 public class ProdutoClientFallback implements IProdutoClient {
 

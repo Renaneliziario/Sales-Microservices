@@ -15,6 +15,7 @@ import jakarta.validation.ConstraintViolation;
 import lombok.Getter;
 import lombok.Setter;
 
+// cópia do ApiError do ProdutoService, não compartilhada - mesma duplicação nos 3 serviços
 @Getter
 @Setter
 public class ApiError {
@@ -86,11 +87,6 @@ public class ApiError {
         globalErrors.forEach(this::addValidationError);
     }
 
-    /**
-     * Utility method for adding error of ConstraintViolation. Usually when a @Validated validation fails.
-     *
-     * @param cv the ConstraintViolation
-     */
     public void addValidationError(ConstraintViolation<?> cv) {
         this.addValidationError(
                 cv.getRootBeanClass().getSimpleName(),

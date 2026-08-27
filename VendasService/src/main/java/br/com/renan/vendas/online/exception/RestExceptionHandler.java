@@ -14,6 +14,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+// este handler é quem decide o status HTTP quando o CadastroVenda propaga uma falha de
+// chamada cross-service. IllegalStateException (lançada manualmente nos catch de FeignException
+// dentro do CadastroVenda) vira 503 direto aqui embaixo - não tem relação com o fallback
+// do @FeignClient, que hoje não está ativo (falta feign.circuitbreaker.enabled=true)
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @ControllerAdvice
 public class RestExceptionHandler extends ResponseEntityExceptionHandler {
@@ -38,6 +42,9 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return buildResponseEntity(apiError);
     }
 
+    // pega FeignException crua só nos fluxos que não têm try/catch próprio (ex:
+    // CadastroVenda.adicionarProduto) - em cadastrar() o try/catch já converte pra
+    // IllegalStateException/EntityNotFoundException antes de chegar até aqui
     @ExceptionHandler(FeignException.class)
     protected ResponseEntity<Object> handleFeignException(FeignException ex) {
         if (ex instanceof FeignException.NotFound) {

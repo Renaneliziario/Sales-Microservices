@@ -7,8 +7,8 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
-@RefreshScope
-@EnableFeignClients
+@RefreshScope // mesma situação dos outros dois serviços - sem /actuator/refresh, fica parado
+@EnableFeignClients // liga o IClienteClient e o IProdutoClient
 @EnableJpaRepositories
 public class VendasServiceApplication {
 

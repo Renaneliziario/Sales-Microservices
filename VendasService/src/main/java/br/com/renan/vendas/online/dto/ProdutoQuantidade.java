@@ -13,6 +13,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+// cada item da lista que chega no VendaDTO - só código + quantidade, o resto
+// (nome, preço) o CadastroVenda busca no ProdutoService na hora de montar o ItemVenda
 public class ProdutoQuantidade {
 
     @NotNull

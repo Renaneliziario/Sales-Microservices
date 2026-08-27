@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import br.com.renan.vendas.online.dto.ProdutoDTO;
 
+// mesma situação do IClienteClient: fallback existe e está registrado, mas
+// feign.circuitbreaker.enabled não está ligado em nenhum profile, então nunca dispara -
+// quem trata a falha de verdade é o try/catch manual dentro do CadastroVenda
 @FeignClient(name = "produto-service", url = "${services.produto.url}", fallback = ProdutoClientFallback.class)
 public interface IProdutoClient {
 

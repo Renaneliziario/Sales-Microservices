@@ -33,6 +33,9 @@ public class Venda {
         @Schema(description="Código da venda")
         private String codigo;
 
+        // Long solto, sem @ManyToOne - clienteId aponta pra uma entidade que vive no
+        // banco do ClienteService, não dá pra ter FK de verdade entre bancos diferentes.
+        // a integridade fica por conta da chamada Feign no CadastroVenda, não do banco
         @Column(nullable = false)
         @Schema(description="ID do cliente")
         private Long clienteId;

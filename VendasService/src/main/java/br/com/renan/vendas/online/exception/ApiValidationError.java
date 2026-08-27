@@ -13,6 +13,7 @@ public class ApiValidationError extends ApiSubError {
     private Object rejectedValue;
     private String message;
 
+    // erro de objeto inteiro, sem campo/valor específico envolvido
     ApiValidationError(String object, String message) {
         this.object = object;
         this.message = message;

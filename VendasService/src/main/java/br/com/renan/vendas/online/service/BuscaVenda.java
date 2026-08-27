@@ -25,6 +25,8 @@ public class BuscaVenda {
                                 .orElseThrow(() -> new EntityNotFoundException(Venda.class.getSimpleName() + " não encontrado pelo id: " + id));
         }
 
+        // sem uso hoje - ClienteService e ProdutoService expõem um endpoint equivalente
+        // (/is-cadastrado, /isCadastrado), esse aqui não tem rota no VendaResource
         public Boolean isCadastrado(Long id) {
                 return vendaRepository.existsById(id);
         }

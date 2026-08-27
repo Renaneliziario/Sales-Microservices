@@ -37,6 +37,10 @@ public class CadastroVenda {
                 this.clienteClient = clienteClient;
         }
 
+        // fluxo inteiro é síncrono: valida cliente, processa item por item baixando
+        // estoque a cada um, e se algo falhar no meio devolve o estoque já baixado
+        // (ver o catch lá embaixo). é uma saga manual, sem 2PC nem orquestrador -
+        // funciona porque só tem 2 serviços remotos envolvidos e o volume é baixo
         @Transactional
         public Venda cadastrar(@Valid VendaDTO vendaDTO) {
                 Venda venda = Venda.builder()
@@ -100,7 +104,10 @@ public class CadastroVenda {
                                 venda.getItens().add(item);
                         }
                 } catch (Exception e) {
-                        // Rollback: Estornar estoque dos itens já processados
+                        // compensação manual da saga: devolve o estoque só do que já foi
+                        // baixado até aqui. se o reporEstoque também falhar, só loga e segue -
+                        // não tem fila de retry nem dead-letter, o estoque fica divergente
+                        // até alguém notar e corrigir na mão
                         itensProcessados.forEach(item -> {
                                 try {
                                         produtoClient.reporEstoque(item.getCodigoProduto(), item.getQuantidade());
@@ -111,6 +118,8 @@ public class CadastroVenda {
                         throw e;
                 }
 
+                // defensivo, mas não deveria ser alcançável: VendaDTO.itens já tem @NotEmpty,
+                // e qualquer falha no loop acima já teria lançado e caído no catch de cima
                 if (venda.getItens().isEmpty()) {
                         throw new IllegalStateException("Nenhum item válido foi adicionado à venda");
                 }
@@ -128,6 +137,10 @@ public class CadastroVenda {
                                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
 
+        // finalizar/cancelar ficaram um tempo sem rota nenhuma no VendaResource -
+        // existiam aqui mas eram inacessíveis pela API. agora que tem rota, são
+        // o gatilho pensado pros eventos PedidoConfirmado/PedidoCancelado (RabbitMQ,
+        // ainda não implementado)
         @Transactional
         public Venda finalizar(String codigo) {
                 Venda venda = vendaRepository.findByCodigo(codigo)
@@ -154,6 +167,8 @@ public class CadastroVenda {
                 return vendaRepository.save(venda);
         }
 
+        // atualizar/remover continuam sem rota no VendaResource - código morto de
+        // verdade, ninguém chama isso pela API hoje
         @Transactional
         public Venda atualizar(@Valid Venda venda) {
                 if (venda.getId() == null) {
@@ -178,6 +193,9 @@ public class CadastroVenda {
                 vendaRepository.deleteById(id);
         }
     
+    // esse caminho não tem a compensação que o cadastrar() tem - se baixarEstoque()
+    // falhar aqui embaixo, não devolve nada, só propaga o erro. inconsistente com o
+    // resto do fluxo, mas como é uma chamada só (não um loop de itens) o risco é menor
     @Transactional
     public Venda adicionarProduto(Long id, String codigoProduto, Integer quantidade) {
         Venda venda = vendaRepository.findById(id)
