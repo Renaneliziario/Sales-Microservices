@@ -11,6 +11,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
+        // liberado geral por enquanto - ainda não tem Gateway na frente pra centralizar
+        // autenticação, então deixar tudo travado aqui atrapalharia mais que ajudaria.
+        // os requestMatchers do swagger ficam explícitos mesmo assim, é o que vai
+        // ficar restrito quando isso for revisado
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth

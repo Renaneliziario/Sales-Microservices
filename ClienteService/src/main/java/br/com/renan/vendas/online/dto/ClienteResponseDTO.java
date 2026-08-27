@@ -1,9 +1,6 @@
 package br.com.renan.vendas.online.dto;
 
-/**
- * Record para saída de dados de Cliente (Outbound).
- * Isola a entidade JPA e decide o que o mundo externo pode ver.
- */
+// só o que a API expõe pra fora - telefone e endereço ficam de fora de propósito
 public record ClienteResponseDTO(
     Long id,
     String nome,

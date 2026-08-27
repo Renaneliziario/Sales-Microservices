@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+// getters/setters na mão aqui em vez de Lombok - foi a primeira entidade escrita
+// no projeto, os outros serviços já usam @Getter/@Setter/@Builder
 @Entity
 @Table(name = "cliente", uniqueConstraints = {
         @UniqueConstraint(columnNames = "cpf"),

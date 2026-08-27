@@ -9,9 +9,13 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+// terceiro modelo de erro diferente no projeto - Produto e Vendas usam uma versão mais
+// rica (subErrors polimórfico, vários construtores), esse aqui é mais simples
+// (Map<String,String> pra validação). os três foram escritos em momentos diferentes,
+// nenhum reaproveita o outro
 @Getter
 @Setter
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL) // sem isso todo erro simples viria com "errors": null no corpo
 public class ApiError {
 
     private int status;

@@ -12,6 +12,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+// sem @Order aqui, diferente do RestExceptionHandler do ProdutoService/VendasService
+// (que têm @Order(HIGHEST_PRECEDENCE)) - não muda nada na prática hoje porque só existe
+// um ControllerAdvice em cada serviço, mas é mais um sinal de que os três handlers
+// foram escritos separados, sem padrão comum entre eles
 @ControllerAdvice
 public class RestExceptionHandler extends ResponseEntityExceptionHandler {
 
@@ -40,6 +44,8 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
     }
 
+    // pega tudo que não foi tratado nos handlers acima. printStackTrace aqui é
+    // provisório, o ideal era um logger de verdade indo pro Log4j2 (etapa futura)
     @ExceptionHandler(RuntimeException.class)
     protected ResponseEntity<Object> handleRuntimeException(RuntimeException ex) {
         ex.printStackTrace();

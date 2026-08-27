@@ -19,7 +19,8 @@ public class CadastroCliente {
 
     @Transactional
     public ClienteResponseDTO cadastrar(ClienteRequestDTO dto) {
-        // Mapeamento manual: DTO -> Entity
+        // mapeamento na mão mesmo, sem MapStruct - projeto pequeno o suficiente
+        // pra não valer a pena a dependência extra
         Cliente cliente = new Cliente();
         cliente.setNome(dto.nome());
         cliente.setCpf(dto.cpf());
@@ -32,7 +33,6 @@ public class CadastroCliente {
 
         Cliente clienteSalvo = clienteRepository.save(cliente);
 
-        // Mapeamento manual: Entity -> DTO
         return mapToResponseDTO(clienteSalvo);
     }
 
@@ -41,7 +41,7 @@ public class CadastroCliente {
         Cliente clienteExistente = clienteRepository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado pelo id: " + id));
 
-        // Atualiza os campos mutáveis
+        // cpf não entra aqui de propósito - depois de cadastrado não muda mais
         clienteExistente.setNome(dto.nome());
         clienteExistente.setTel(dto.tel());
         clienteExistente.setEmail(dto.email());
@@ -55,6 +55,9 @@ public class CadastroCliente {
         return mapToResponseDTO(clienteAtualizado);
     }
 
+    // remove sem checar se esse id está referenciado em alguma Venda - não tem como
+    // checar isso daqui mesmo (venda mora em outro banco), mas o resultado é que dá
+    // pra apagar um cliente que já tem venda registrada, e o clienteId lá vira órfão
     @Transactional
     public void remover(Long id) {
         if (!clienteRepository.existsById(id)) {
@@ -63,10 +66,6 @@ public class CadastroCliente {
         clienteRepository.deleteById(id);
     }
 
-    /**
-     * Método auxiliar para centralizar a criação do DTO de resposta.
-     * Evita repetição de código (DRY - Don't Repeat Yourself).
-     */
     private ClienteResponseDTO mapToResponseDTO(Cliente cliente) {
         return new ClienteResponseDTO(
             cliente.getId(),

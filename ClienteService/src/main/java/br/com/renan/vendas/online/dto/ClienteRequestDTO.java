@@ -5,10 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-/**
- * Record para entrada de dados de Cliente (Inbound).
- * Utiliza Bean Validation para garantir a integridade antes de chegar ao banco.
- */
+// numero é o único campo sem validação nenhuma aqui embaixo - a entidade tem @NotNull,
+// então null só estoura na hora do save (constraint do banco), não como 400 de validação
 public record ClienteRequestDTO(
     @NotBlank(message = "O nome é obrigatório")
     @Size(min = 2, max = 100, message = "O nome deve ter entre 2 e 100 caracteres")

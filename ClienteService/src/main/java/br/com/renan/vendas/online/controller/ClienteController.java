@@ -50,6 +50,7 @@ public class ClienteController {
         return ResponseEntity.ok(buscaCliente.buscarPorId(id));
     }
 
+    // usado pelo VendasService via Feign pra validar o cliente antes de fechar uma venda
     @GetMapping(value = "/is-cadastrado/{id}")
     @Operation(summary = "Verificar se cliente existe pelo ID")
     public ResponseEntity<Boolean> isCadastrado(@PathVariable Long id) {

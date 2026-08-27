@@ -19,34 +19,23 @@ public class BuscaCliente {
         this.clienteRepository = clienteRepository;
     }
 
-    /**
-     * Retorna uma página de clientes convertidos para DTO.
-     */
     public Page<ClienteResponseDTO> buscar(Pageable pageable) {
         Page<Cliente> clientes = clienteRepository.findAll(pageable);
-        // O método .map() da Page converte cada item da lista de forma eficiente
         return clientes.map(this::mapToResponseDTO);
     }
 
-    /**
-     * Busca um cliente específico por ID e o converte para DTO.
-     */
     public ClienteResponseDTO buscarPorId(Long id) {
         Cliente cliente = clienteRepository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado pelo id: " + id));
         return mapToResponseDTO(cliente);
     }
 
-    /**
-     * Verificação rápida de existência (Padrão RPC/Custom GET).
-     */
+    // endpoint enxuto, só existência - é o que o VendasService chama via Feign,
+    // não faz sentido trafegar o cliente inteiro só pra validar se ele existe
     public Boolean isCadastrado(Long id) {
         return clienteRepository.existsById(id);
     }
 
-    /**
-     * Método auxiliar para centralizar a criação do DTO de resposta.
-     */
     private ClienteResponseDTO mapToResponseDTO(Cliente cliente) {
         return new ClienteResponseDTO(
             cliente.getId(),
