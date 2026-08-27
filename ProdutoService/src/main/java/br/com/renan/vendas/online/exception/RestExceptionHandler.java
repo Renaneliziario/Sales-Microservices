@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+// handler próprio desse serviço também, escrito separado do RestExceptionHandler do
+// ClienteService - por isso os dois cobrem exceções diferentes (esse tem IllegalArgumentException,
+// o outro tem ConstraintViolationException). @Order não faz muita diferença hoje, só tem
+// um ControllerAdvice nesse contexto, mas não custa deixar caso outro apareça depois
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @ControllerAdvice
 public class RestExceptionHandler extends ResponseEntityExceptionHandler {

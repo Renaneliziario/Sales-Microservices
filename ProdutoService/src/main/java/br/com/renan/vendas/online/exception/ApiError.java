@@ -15,6 +15,9 @@ import jakarta.validation.ConstraintViolation;
 import lombok.Getter;
 import lombok.Setter;
 
+// modelo de erro próprio desse serviço - não tem nada compartilhado entre os módulos
+// pra isso, então divergiu do ApiError do ClienteService (esse aqui suporta subErrors
+// detalhados por campo, o outro é mais simples)
 @Getter
 @Setter
 public class ApiError {
@@ -86,11 +89,6 @@ public class ApiError {
         globalErrors.forEach(this::addValidationError);
     }
 
-    /**
-     * Utility method for adding error of ConstraintViolation. Usually when a @Validated validation fails.
-     *
-     * @param cv the ConstraintViolation
-     */
     public void addValidationError(ConstraintViolation<?> cv) {
         this.addValidationError(
                 cv.getRootBeanClass().getSimpleName(),

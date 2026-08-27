@@ -16,7 +16,7 @@ public class BuscaProduto {
 		this.produtoRepository = produtoRepository;
 	}
 
-	public Page<Produto> buscar(Pageable pageable) {  // ← Pageable correto
+	public Page<Produto> buscar(Pageable pageable) {
 		return produtoRepository.findAll(pageable);
 	}
 

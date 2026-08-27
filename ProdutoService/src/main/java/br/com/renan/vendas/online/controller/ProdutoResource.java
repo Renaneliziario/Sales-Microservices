@@ -19,6 +19,8 @@ import br.com.renan.vendas.online.service.CadastroProduto;
 import br.com.renan.vendas.online.service.GestaoEstoque;
 import jakarta.validation.Valid;
 
+// sem DTO aqui - a entidade Produto entra e sai direto pela API. ClienteService já
+// separou request/response, esse serviço ficou pra trás nessa frente
 @RestController
 @RequestMapping(value = "/produto")
 public class ProdutoResource {
@@ -56,6 +58,9 @@ public class ProdutoResource {
         return ResponseEntity.ok(buscaProduto.buscarPorCodigo(codigo));
     }
 
+    // camelCase aqui, kebab-case no equivalente do ClienteService (/is-cadastrado/{id}) -
+    // foi esse tipo de inconsistência de path que já causou um 404 escondido no Feign,
+    // vale padronizar os dois quando mexer de novo nesse contrato
     @GetMapping(value = "/isCadastrado/{id}")
     public ResponseEntity<Boolean> isCadastrado(@PathVariable Long id) {
         return ResponseEntity.ok(buscaProduto.isCadastrado(id));

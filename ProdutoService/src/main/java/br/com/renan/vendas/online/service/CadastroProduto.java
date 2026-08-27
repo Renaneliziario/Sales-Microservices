@@ -7,6 +7,9 @@ import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+// @Validated aqui não tá fazendo nada hoje - só ativa validação de parâmetro solto
+// (tipo @Positive direto num Integer), e os métodos abaixo só recebem @Valid Produto,
+// que já é validado pelo Spring MVC na borda do controller, antes disso ser chamado
 @Service
 @Validated
 public class CadastroProduto {

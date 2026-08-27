@@ -13,6 +13,8 @@ public class ApiValidationError extends ApiSubError {
     private Object rejectedValue;
     private String message;
 
+    // construtor curto pra erro de objeto inteiro (global error), sem campo/valor
+    // específico envolvido - o de 4 argumentos (Lombok) cobre o caso normal por campo
     ApiValidationError(String object, String message) {
         this.object = object;
         this.message = message;

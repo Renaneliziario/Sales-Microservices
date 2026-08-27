@@ -13,6 +13,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+// as anotações de Bean Validation aqui fazem dupla função: validam antes do save
+// E validam o corpo da requisição direto (é essa mesma classe que o controller recebe)
 @Entity
 @Table(name = "produto", uniqueConstraints = {
         @UniqueConstraint(columnNames = "codigo")
