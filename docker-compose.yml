@@ -37,3 +37,77 @@ services:
       - sales-infra-net
     depends_on:
       - postgres
+
+  configserver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: ConfigServer
+    container_name: configserver
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    networks:
+      - sales-infra-net
+
+  clienteservice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: ClienteService
+    container_name: clienteservice
+    restart: unless-stopped
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://configserver:8888
+      DB_HOST: postgres
+    ports:
+      - "8081:8081"
+    networks:
+      - sales-infra-net
+    depends_on:
+      - postgres
+      - configserver
+
+  produtoservice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: ProdutoService
+    container_name: produtoservice
+    restart: unless-stopped
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://configserver:8888
+      DB_HOST: postgres
+    ports:
+      - "8082:8082"
+    networks:
+      - sales-infra-net
+    depends_on:
+      - postgres
+      - configserver
+
+  vendasservice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: VendasService
+    container_name: vendasservice
+    restart: unless-stopped
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://configserver:8888
+      DB_HOST: postgres
+      SERVICES_CLIENTE_URL: http://clienteservice:8081
+      SERVICES_PRODUTO_URL: http://produtoservice:8082
+    ports:
+      - "8083:8083"
+    networks:
+      - sales-infra-net
+    depends_on:
+      - postgres
+      - configserver
+      - clienteservice
+      - produtoservice

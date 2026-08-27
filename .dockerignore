@@ -1,0 +1,6 @@
+target/
+postgres_data/
+.git/
+.idea/
+.vscode/
+*.log
