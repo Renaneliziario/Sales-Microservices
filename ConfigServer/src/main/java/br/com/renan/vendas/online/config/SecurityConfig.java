@@ -14,10 +14,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // sem sessão de browser aqui, é serviço->serviço, então CSRF não se aplica
-            .csrf(csrf -> csrf.disable())
+            .csrf(csrf -> csrf.disable()) // chamada serviço-a-serviço, não formulário de browser
             .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
-            .httpBasic(Customizer.withDefaults()); // Apenas HTTP Basic, sem formLogin
+            // Basic puro, credenciais em texto plano em cada request - só não é um problema
+            // maior porque isso roda tudo dentro da rede docker interna, sem exposição externa
+            .httpBasic(Customizer.withDefaults());
         return http.build();
     }
 }

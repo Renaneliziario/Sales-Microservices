@@ -5,8 +5,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.config.server.EnableConfigServer;
 
 
-// @EnableConfigServer transforma essa aplicação boot comum num Spring Cloud Config Server:
-// os outros serviços buscam a config deles aqui no startup em vez de ter application.yml próprio
+// profile native, não git-backed - a config vive dentro desse jar (classpath:/config).
+// mudar uma porta ou uma url de banco significa rebuild + redeploy do ConfigServer,
+// não um git push. bom o suficiente pra 4 serviços, revisar se isso crescer muito mais
 @EnableConfigServer
 @SpringBootApplication
 public class ConfigServerApplication {
