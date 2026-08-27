@@ -41,6 +41,10 @@ public class Venda {
         @Schema(description="Lista de itens da venda")
         private List<ItemVenda> itens;
 
+        @Column(nullable = false, length = 200)
+        @Schema(description="Endereço de entrega")
+        private String enderecoEntrega;
+
         @Column(nullable = false)
         @Schema(description="Valor total da venda")
         private BigDecimal valorTotal;

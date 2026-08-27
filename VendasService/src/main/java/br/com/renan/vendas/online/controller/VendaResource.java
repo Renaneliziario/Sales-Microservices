@@ -63,4 +63,16 @@ public class VendaResource {
                         @PathVariable(name = "quantidade", required = true) Integer quantidade) {
                 return ResponseEntity.ok(cadastroVenda.adicionarProduto(id, codigoProduto, quantidade));
         }
+
+        @PutMapping("/{id}/finalizar")
+        public ResponseEntity<Venda> finalizar(@PathVariable Long id) {
+                Venda venda = buscaVenda.buscarPorId(id);
+                return ResponseEntity.ok(cadastroVenda.finalizar(venda.getCodigo()));
+        }
+
+        @PutMapping("/{id}/cancelar")
+        public ResponseEntity<Venda> cancelar(@PathVariable Long id) {
+                Venda venda = buscaVenda.buscarPorId(id);
+                return ResponseEntity.ok(cadastroVenda.cancelar(venda.getCodigo()));
+        }
 }

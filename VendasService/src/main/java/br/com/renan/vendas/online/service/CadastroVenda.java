@@ -45,6 +45,7 @@ public class CadastroVenda {
                                 .status(StatusVenda.INICIADA)
                                 .dataVenda(Instant.now())
                                 .itens(new ArrayList<>())
+                                .enderecoEntrega(vendaDTO.getEnderecoEntrega())
                                 .build();
 
                 // 1. Validar Cliente
