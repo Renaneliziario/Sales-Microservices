@@ -3,7 +3,7 @@
 Este projeto é um ecossistema de microsserviços desenvolvido para gestão de vendas, focado em alta disponibilidade, isolamento de domínios e escalabilidade. A arquitetura utiliza as tecnologias mais recentes do ecossistema Spring e segue as melhores práticas de engenharia de software.
 
 ![Java](https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=openjdk)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.5-brightgreen?style=for-the-badge&logo=springboot)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.4-brightgreen?style=for-the-badge&logo=springboot)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?style=for-the-badge&logo=postgresql)
 ![Docker](https://img.shields.io/badge/Docker-Enabled-blue?style=for-the-badge&logo=docker)
 
@@ -53,43 +53,55 @@ O sistema é composto por 4 módulos principais que trabalham de forma coordenad
 
 ### Pré-requisitos
 - Docker e Docker Compose instalados.
-- Java 17 instalado (para execução local).
-- Maven instalado.
+- Java 17 e Maven instalados (só necessário pra rodar/debugar um serviço fora do Docker).
 
-### Passo 1: Infraestrutura (PostgreSQL)
-O projeto utiliza bancos de dados isolados para cada serviço. Suba o container do banco:
+### Opção A — Docker Compose completo (mais rápido)
+Sobe Postgres, pgAdmin e os 4 serviços Java de uma vez, cada um buildado a partir do
+[`Dockerfile`](./Dockerfile) multi-stage na raiz:
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
-*Nota: Este comando já cria automaticamente os bancos `clientedb`, `produtodb` e `vendadb`.*
+Primeira subida demora um pouco (build Maven de cada módulo). As próximas já reaproveitam
+o cache de camadas do Docker. Se algum serviço subir antes do `ConfigServer` terminar de
+bootar, `docker compose up -d --build <servico>` de novo resolve.
 
-### Passo 2: Config Server (Obrigatório primeiro)
-Todos os outros serviços buscam suas configurações aqui.
+| Serviço | Porta |
+|---|---|
+| Config Server | 8888 |
+| Cliente Service | 8081 |
+| Produto Service | 8082 |
+| Vendas Service | 8083 |
+| PostgreSQL | 5432 |
+| pgAdmin | 5050 (login padrão: `admin@admin.com` / `admin`) |
 
-**No Linux/macOS:**
+*Nota: o `init-db.sql` cria automaticamente os bancos `clientedb`, `produtodb` e `vendadb` na subida do Postgres.*
+
+### Opção B — Manual, serviço por serviço (útil pra debugar um só)
+Suba só a infraestrutura primeiro:
 ```bash
-cd ConfigServer
-./mvnw spring-boot:run
+docker compose up -d postgres
 ```
 
-**No Windows (Command Prompt ou PowerShell):**
+Depois o Config Server, obrigatoriamente primeiro (os outros buscam config nele no boot):
+
+**Linux/macOS:**
+```bash
+cd ConfigServer && ./mvnw spring-boot:run
+```
+**Windows:**
 ```cmd
 cd ConfigServer
 mvnw.cmd spring-boot:run
 ```
 
-### Passo 3: Serviços de Domínio
-Abra um terminal para cada serviço e execute o comando correspondente ao seu sistema:
+E por fim, um terminal por serviço de domínio:
 
-**No Linux/macOS:**
+**Linux/macOS:**
 ```bash
-# Exemplo para o serviço de Vendas
 cd VendasService && ./mvnw spring-boot:run
 ```
-
-**No Windows:**
+**Windows:**
 ```cmd
-# Exemplo para o serviço de Vendas
 cd VendasService
 mvnw.cmd spring-boot:run
 ```
@@ -113,6 +125,20 @@ O projeto possui uma suíte de testes que cobre desde regras unitárias até flu
 # No Windows:
 mvnw.cmd test
 ```
+
+---
+
+## 📚 Documentação adicional
+Decisões técnicas e padrões adotados estão detalhados em [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
+
+---
+
+## ⚠️ Limitações conhecidas
+Projeto de portfólio em evolução ativa — alguns pontos documentados, ainda não corrigidos:
+- `ProdutoService` não tem DTO de saída, expõe a entidade JPA direto na API (`ClienteService` já separou request/response, os outros dois não).
+- O fallback do Feign (`@FeignClient(fallback = ...)`) está implementado nos dois clients do `VendasService`, mas o circuit breaker não está ativo (falta `feign.circuitbreaker.enabled=true`) — a degradação hoje é tratada via `try/catch` manual em `CadastroVenda`.
+- Criação de venda usa uma saga manual (baixa estoque item a item, compensa em caso de falha) sem 2PC nem fila de retry — se o estorno também falhar, o estoque fica divergente até correção manual.
+- `GestaoEstoque.baixarEstoque` faz check-then-act sem lock — duas baixas concorrentes no mesmo produto podem ambas passar da checagem de saldo antes de qualquer uma salvar.
 
 ---
 

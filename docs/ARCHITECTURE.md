@@ -23,7 +23,7 @@ O sistema adota a decomposição baseada em domínios de negócio. Cada serviço
 Os serviços utilizam **OpenFeign** para realizar chamadas síncronas entre si de forma declarativa e limpa.
 
 - **Fluxo de Agregação:** O `VendasService` atua como um orquestrador. Ao receber um pedido, ele consulta o `ClienteService` para validar o comprador e o `ProdutoService` para verificar e baixar o estoque.
-- **Resiliência:** Implementamos o **Resilience4j** para lidar com falhas de rede ou lentidão em serviços externos, evitando que uma falha em um serviço derrube todo o ecossistema (Circuit Breaker).
+- **Resiliência:** A dependência do **Resilience4j** está no projeto e os Feign clients já têm classes de fallback implementadas, mas o circuit breaker ainda não está ativo (falta a propriedade `feign.circuitbreaker.enabled=true`). Hoje a degradação em caso de falha de um serviço externo é tratada via `try/catch` manual no `CadastroVenda`, que diferencia "recurso não encontrado" de "serviço indisponível" e responde com o status HTTP correspondente.
 
 ---
 
@@ -31,7 +31,7 @@ Os serviços utilizam **OpenFeign** para realizar chamadas síncronas entre si d
 
 Utilizamos **Spring Data JPA** com **PostgreSQL**.
 
-- **Migração MongoDB para PostgreSQL:** Optamos por um banco relacional para garantir a integridade dos dados (Transações ACID). Em um sistema de vendas, é crucial garantir que a baixa do estoque e o registro da venda aconteçam exatamente ao mesmo tempo ou nada seja salvo.
+- **Banco relacional por serviço:** Optamos por PostgreSQL em vez de um banco documento, pra ter transações ACID dentro de cada serviço. Isso garante atomicidade só dentro do próprio banco — a baixa de estoque (ProdutoService) e o registro da venda (VendasService) são bancos diferentes, então não há transação distribuída real entre eles: se algo falhar no meio do processo, o `CadastroVenda` compensa manualmente devolvendo o estoque já baixado (saga-lite), não é um rollback atômico de verdade.
 - **Identidade:** Utilizamos IDs do tipo `Long` com estratégia `IDENTITY`, otimizando a indexação e busca no banco de dados.
 - **Relacionamentos:** O relacionamento entre `Venda` e `ItemVenda` é gerenciado via JPA com `CascadeType.ALL`, garantindo que os itens da venda sigam o mesmo ciclo de vida do pedido pai.
 
@@ -50,6 +50,6 @@ A qualidade do código é validada em três níveis:
 ## 🛠️ Tecnologias Adotadas e Motivação
 
 - **Java 17 (LTS):** Escolhida por ser a versão estável de suporte a longo prazo, trazendo melhorias de performance e sintaxes modernas como *Records*.
-- **Spring Boot 3.4.x:** Aproveita o que há de mais moderno em autoconfiguração e suporte a microsserviços.
+- **Spring Boot 3.3.x:** Aproveita o que há de mais moderno em autoconfiguração e suporte a microsserviços.
 - **PostgreSQL 16:** Banco de dados relacional robusto para garantir consistência em operações financeiras e de estoque.
 - **Docker:** Utilizado para garantir que qualquer desenvolvedor consiga rodar exatamente o mesmo ambiente, eliminando o clássico problema do "na minha máquina funciona".
